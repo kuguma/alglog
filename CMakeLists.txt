@@ -15,7 +15,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(FMT)
 
-target_compile_features(AlgLog PUBLIC cxx_std_17)
+target_compile_features(AlgLog PUBLIC cxx_std_11)
 
 target_compile_definitions(AlgLog PUBLIC
     FMT_HEADER_ONLY # fmtライブラリをヘッダオンリーで用いる
@@ -24,11 +24,13 @@ target_compile_definitions(AlgLog PUBLIC
 # add_subdirectory("...")
 
 target_sources(AlgLog PRIVATE
-    test.cpp
+    test/test.cpp
+    test/test_multi_include.cpp
 )
 
 target_include_directories(AlgLog PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}"
+    "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    ${FMT_SOURCE_DIR}/include # FetchContentでXXXを取得すると、XXX_SOURCE_DIRでソースディレクトリのパスが取れる
 )
 
 # target_link_libraries(AlgLog PUBLIC
