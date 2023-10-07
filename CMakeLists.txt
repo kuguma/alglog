@@ -4,6 +4,8 @@ Include(FetchContent)
 
 project(ALGLOG)
 
+find_package(Threads REQUIRED)
+
 add_executable(AlgLog
     
 )
@@ -33,9 +35,9 @@ target_include_directories(AlgLog PUBLIC
     ${FMT_SOURCE_DIR}/include # FetchContentでXXXを取得すると、XXX_SOURCE_DIRでソースディレクトリのパスが取れる
 )
 
-# target_link_libraries(AlgLog PUBLIC
-#     ...
-# )
+target_link_libraries(AlgLog PRIVATE
+    Threads::Threads
+)
 
 # target_link_directories(AlgLog PUBLIC
 #     ...
