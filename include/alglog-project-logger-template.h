@@ -1,15 +1,12 @@
 #pragma once
 
 #include <alglog.h>
-#include <mutex>
-
-
 
 namespace my_project{
 
     class Logger {
     private:
-        Logger() : logger(std::make_unique<alglog::logger>("my_project"))
+        Logger() : logger(std::make_unique<alglog::logger>())
         {
             // modify this
             logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );
@@ -30,41 +27,13 @@ namespace my_project{
             return instance;
         }
     };
+
 }
 
-
-#define mpjLogRelease(...) AlgLogRelease(mpj::Logger::get().logger, __VA_ARGS__)
-#define mpjLogCritical(...) AlgLogCritical(mpj::Logger::get().logger, __VA_ARGS__)
-#define mpjLogWarn(...) AlgLogWarn(mpj::Logger::get().logger, __VA_ARGS__)
-#define mpjLogDebug(...) AlgLogDebug(mpj::Logger::get().logger, __VA_ARGS__)
-#define mpjLogTrace(...) AlgLogTrace(mpj::Logger::get().logger, __VA_ARGS__)
-
-
-/*
-TODO 
-
-グローバルなロガーの管理、他プロジェクトとの兼ね合い
-
-他プロジェクトがある場合、
-    マスター　デバッグ　リリース
-    スレーブ　デバッグ
-
-    みたいな感じになると思う。
-    mapを使えば簡単だが、毎回呼び出すコストが大きいのであまりやりたくない。。
-
-シングルトンのget()のコストはそこまで高くない。
-テンプレートを使う？他プロジェクトがソースからビルドか、ライブラリリンクかによっても変わってくる。
-    やっぱりグローバルなものをlogger側で持つのはやめて独立させた方が良いか？
-
-デバッグでは結局マクロを経由して呼ばないといけない。だったら最初からインターフェースはすべてマクロを標準にした方が良いのではないか？
-alglog＋カスタム用ヘッダの組み合わせが安定か？
-
-リリース版はどうする。同期出力をサポートすべきか？
-
-時間計測機能をつけてもいいかも。
-
-あるエリアにTraceを埋め込んだけどもう見る必要ないみたいなのは割とでてきそう。タグ機能をつけるべきか？
-
-
-
-*/
+#define MyLogError(...) AlgLogError(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogAlart(...) AlgLogAlart(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogInfo(...) AlgLogInfo(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogCritical(...) AlgLogCritical(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogWarn(...) AlgLogWarn(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogDebug(...) AlgLogDebug(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogTrace(...) AlgLogTrace(my_project::Logger::get().logger->, __VA_ARGS__)

@@ -140,20 +140,25 @@ enum class level{
 };
 ```
 
-## How to use
+## How to use / Q & A
 
 とにかくすぐロガーが使いたい
 
 ```C++
+    // 多少奇妙に見えるかもしれませんが、alglogではマクロ呼び出しを経由しない呼び出しを推奨していません（後述）
+    // コンパイルスイッチを確実に動作させるためにも、ログ記録時はマクロ呼び出しを利用してください。
+
     #include <alglog.h>
 
-    AlgLogInitDefaultGlobalLogger();
+    auto logger = alglog::builtin::get_default_logger();
 
-    AlgLogDebug("hello world");
-    AlgLogDebug("The answer is {}.", 42);
+    #define LOG(...) AlgLogDebug(logger., __VA_ARGS__)
+
+    LOG("hello world");
+    LOG("The answer is {}.", 42);
 
     std::vector<int> vec = {1,2,3,4,5};
-    AlgLogTrace("vector =  {}", vec);
+    LOG("vector =  {}", vec);
 ```
 
 ロガーを手動で設定したい
@@ -165,7 +170,6 @@ enum class level{
     lgr->connect_sink(psink);
     lgr->connect_sink( std::make_shared<builtin::file_sink>("my_logger.log") );
     lgr->flush_every(std::chrono::milliseconds(500));
-    AlgLogSetGlobalLogger(std::move(lgr));
 
     // loggerの出力先は、alglog::sinkを継承した自作クラスを用いてカスタムできます。
     // あるsinkが出力を行うかどうかは、sink.valveにラムダを設定することで制御できます。
@@ -186,53 +190,62 @@ sinkにカスタムvalveを設定することで解決できます。
 ```
 
 
-スレッドとプロセスIDの表示をオフにしたい
-
-- これらの情報の取得はシステムコールを利用するため、オーバーヘッドが大きくなります。
-- 問題を調査する時以外は、オフにしておくことができます。
-
-```C++
-#define ALGLOG_GETPID_OFF
-#define ALGLOG_GETTID_OFF
-
-```
-
 想定された運用方法
 
 alglogでは、`alglog.h`をラップしたヘッダ（プロジェクトロガーヘッダ）を作成してもらうことを想定しています。
 
-そうして作成したヘッダは、必ずソースの一番最初に`include`するようにします。
-
 ```C++
 
-// my_logger.h
+// ---------------- my_logger.h ----------------
 
-    #pragma once
-    #include <alglog.h>
+#pragma once
 
-    // これをAPI呼び出しやプログラムのエントリポイント後にすぐ呼び出す
-    inline void setup_logger(){
-        auto logger = alglog::builtin::get_default_logger("main");
-        // ... setup code ...
-        AlgLogSetGlobalLogger(std::move(logger));
-    }
+#include <alglog.h>
 
-// something.cpp
+namespace my_project{
+
+    class Logger {
+    private:
+        Logger() : logger(std::make_unique<alglog::logger>())
+        {
+            // modify this
+            logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );
+            logger->connect_sink( std::make_shared<alglog::builtin::file_sink>("my_project.log") );
+            logger->flush_every(std::chrono::milliseconds(500));
+        };
+        ~Logger() = default;
+
+    public:
+        std::shared_ptr<alglog::logger> logger;
+        Logger(const Logger&) = delete;
+        Logger& operator=(const Logger&) = delete;
+        Logger(Logger&&) = delete;
+        Logger& operator=(Logger&&) = delete;
+
+        static Logger& get() {
+            static Logger instance;
+            return instance;
+        }
+    };
+
+}
+
+#define MyLogError(...) AlgLogError(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogAlart(...) AlgLogAlart(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogInfo(...) AlgLogInfo(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogCritical(...) AlgLogCritical(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogWarn(...) AlgLogWarn(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogDebug(...) AlgLogDebug(my_project::Logger::get().logger->, __VA_ARGS__)
+#define MyLogTrace(...) AlgLogTrace(my_project::Logger::get().logger->, __VA_ARGS__)
+
+
+
+//　---------------- something.cpp ----------------
 
     #include <mylogger.h>
     // ... other includes ... 
 
 ```
-
-複数プロジェクトでalglogを採用すると、場合によってはloggerの設定がコンフリクトします。
-
-それを避けるには、次のようにします。
-
-- 想定された運用方法　を採用する。
-- コンパイラフラグで`ALGLOG_DIRECT_INCLUDE_GUARD`を定義した上で、プロジェクトロガーヘッダの最後で `#undef ALGLOG_DIRECT_INCLUDE_GUARD`する。
-    - これにより、プロジェクトロガーを経由しない直接includeを排除できます。
-
-
 
 ## コンパイルスイッチ
 
@@ -250,16 +263,23 @@ include前にこれらのキーワードを定義するか、コンパイラに�
 
 ## 設計に関する考察
 
-C++でロガーライブラリを構築する場合、以下のような制約と向き合う必要がある。
+### なぜマクロAPIなのか
+
+C++でロガーライブラリを構築する場合、以下のような制約と向き合う必要があります。
 
 - C++20より前では、マクロを使わないとソース情報を取得できない。
 - デバッグにおいては、ソース情報は必須である。
 - マクロにはnamespaceがない。
 
-ロギング用の関数はできるだけコンパクトであることが求められる。短いキーワードで記述できるようにすれば、当然複数プロジェクト間でマクロの衝突や上書きが発生する。
+残念ながらC++20未満の環境では、関数呼び出しによるロギング方法を提供したとしても殆ど使われないでしょう。
+したがって、いっそマクロ呼び出しのみを想定した設計にしてしまおうというのがalglogの設計方針です。
 
-したがって、全体で1つのロガーのみを認め、ロガーの設定は最上位プロジェクトが制御するようにするのが最も合理的になる。
+### 複数プロジェクトでの運用
 
-複数のプロジェクトに跨って複数のロガーを存在させるとそれぞれの入出力の調停を行う必要も出てくるので、単一のロガーを認める設計は、処理速度上でも有利になる。
+同じロギングライブラリが複数プロジェクトで使用される場合、最も問題なのは衝突です。
 
-したがってalglogでは単一のグローバルロガーを用い、複数プロジェクトでは運用を統一することで対処する形を採用した。
+あらゆるプロジェクトが、自分の都合の良いようにライブラリを使おうとすることを想定する必要があります。2つのプロジェクトが、お互いに自分だけの出力を有効化するように設定を行っていたらどうなるでしょうか？
+
+このような問題を避けるため、alglogではグローバルロガーを実装していません。
+
+グローバル化はユーザーがそれぞれの責任で作成します。（namespaceの利用を強く推奨します）

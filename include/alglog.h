@@ -22,6 +22,20 @@
 
 ---------------------------------------------------------------------------- */
 
+/*
+    < usage >
+
+    AlgLogではマクロ経由での呼び出しのみをサポートしている。
+    ・ソース情報を埋め込むため
+    ・コンパイルスイッチを確実に動作させるため
+    1. alglog-project-logger-template.h を参考に、プロジェクトロガーのヘッダソースを作成する。
+        Loggerのコンストラクタでsinkやフォーマッタを設定する。
+        AlgLogXXXをラップした自作マクロを定義する。
+    2. プロジェクトのソースからは、alglog.hではなく先ほど作成したプロジェクトロガーをincludeするようにする。
+
+    ・AlgLogXXのマクロを経由せずに呼び出した場合、コンパイルオプションで消滅しない。
+*/
+
 
 // compile switch -------------------------------------------------
 
@@ -42,8 +56,6 @@
     #define ALGLOG_TRACE_OFF
     #define ALGLOG_INTERNAL_OFF
 #endif
-
-#pragma C
 
 // システムコールでプロセスIDを取得する。もしくは機能を利用しない。
 #ifdef ALGLOG_GETPID_OFF
@@ -184,7 +196,6 @@ struct sink{
         }
     }
 };
-
 
 class logger{
 private:
@@ -343,118 +354,51 @@ namespace builtin{
 
 // -------------------------------------------------------
 
-/*
-    ・C++20より前では、マクロを使わないとソース情報を取得できない。
-    ・デバッグにおいては、ソース情報は必須である。
-    ・マクロにはnamespaceがない。
-    ・nemspaceなしで同じキーワードを使えば、当然衝突する。
-
-    コンセプト：
-        ・ロガーマクロは全てのソース内で同一（衝突してもよい
-        ・ロガーの出力先は、メインプロジェクトが制御する（サブプロジェクトの出力も奪う）
-        ・初めてincludeされた方でAlgLogXXXはdefineされる。
-        ・つまり全てのPRJ1ソースで、alglog.hを最初にincludeするルールを導入する。
-            ・子プロジェクトはALGLOG_LOGGER_ACCESORが定義されているので
-
-
-    デフォルトでは、グローバルロガーはalglogが提供するものになる。
-    小規模なプロジェクトでは、これで十分。
-
-    複数のプロジェクトを跨ぐ場合は、include順に気を付ける。
-    ・loggerは一番最後にincludeする。
-
-
-
-*/ 
-
-class Global {
-private:
-    Global(){};
-    ~Global() = default;
-
-public:
-    std::unique_ptr<alglog::logger> lgr = nullptr;
-    Global(const Global&) = delete;
-    Global& operator=(const Global&) = delete;
-    Global(Global&&) = delete;
-    Global& operator=(Global&&) = delete;
-
-    static Global& get() {
-        static Global instance;
-        return instance;
-    }
-
-    bool initialized(){
-        return static_cast<bool>(lgr);
-    }
-    void init_logger(std::unique_ptr<alglog::logger>&& logger){
-        if (!lgr){
-            lgr = std::move(logger);
-        }else{
-            throw std::runtime_error("It is not possible to initialize a logger twice");
-        }
-    }
-    void release_logger(){
-        lgr.reset();
-    }
-};
-
-// コンパイラにこのフラグを設定し、プロジェクトのロガーヘッダでundefを行ようにする。
-// 直接alglogをincludeした場合（つまりロガーの設定を行わないビルド経路が存在した場合に）エラーになる。
-
-#ifdef ALGLOG_DIRECT_INCLUDE_GUARD
-    #pragma error "Direct inclusion of alglog.h is prohibited. Please include the logger header in your project definition."
-#endif
 
 #define ALGLOG_SR alglog::source_location{__ALGLOG_FNAME__, __LINE__, __func__}
 
 #ifndef ALGLOG_ERROR_OFF
-    #define AlgLogError(...) alglog::Global::get().lgr->fmt_store(alglog::level::error, __VA_ARGS__)
+    #define AlgLogError(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(alglog::level::error, __VA_ARGS__)
 #else
-    #define AlgLogError(...) ((void)0)
+    #define AlgLogError(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_ALART_OFF
-    #define AlgLogAlart(...) alglog::Global::get().lgr->fmt_store(alglog::level::alart, __VA_ARGS__)
+    #define AlgLogAlart(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(alglog::level::alart, __VA_ARGS__)
 #else
-    #define AlgLogAlart(...) ((void)0)
+    #define AlgLogAlart(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_INFO_OFF
-    #define AlgLogInfo(...) alglog::Global::get().lgr->fmt_store(alglog::level::info, __VA_ARGS__)
+    #define AlgLogInfo(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(alglog::level::info, __VA_ARGS__)
 #else
-    #define AlgLogInfo(...) ((void)0)
+    #define AlgLogInfo(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_CRITICAL_OFF
-    #define AlgLogCritical(...) alglog::Global::get().lgr->fmt_store(ALGLOG_SR, alglog::level::critical, __VA_ARGS__)
+    #define AlgLogCritical(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(ALGLOG_SR, alglog::level::critical, __VA_ARGS__)
 #else
-    #define AlgLogCritical(...) ((void)0)
+    #define AlgLogCritical(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_WARN_OFF
-    #define AlgLogWarn(...) alglog::Global::get().lgr->fmt_store(ALGLOG_SR, alglog::level::warn, __VA_ARGS__)
+    #define AlgLogWarn(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(ALGLOG_SR, alglog::level::warn, __VA_ARGS__)
 #else
-    #define AlgLogWarn(...) ((void)0)
+    #define AlgLogWarn(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_DEBUG_OFF
-    #define AlgLogDebug(...) alglog::Global::get().lgr->fmt_store(ALGLOG_SR, alglog::level::debug, __VA_ARGS__)
+    #define AlgLogDebug(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(ALGLOG_SR, alglog::level::debug, __VA_ARGS__)
 #else
-    #define AlgLogDebug(...) ((void)0)
+    #define AlgLogDebug(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
 #ifndef ALGLOG_TRACE_OFF
-    #define AlgLogTrace(...) alglog::Global::get().lgr->fmt_store(ALGLOG_SR, alglog::level::trace, __VA_ARGS__)
+    #define AlgLogTrace(PRJ_LOGGER_ACCESS, ...) PRJ_LOGGER_ACCESS ## fmt_store(ALGLOG_SR, alglog::level::trace, __VA_ARGS__)
 #else
-    #define AlgLogTrace(...) ((void)0)
+    #define AlgLogTrace(PRJ_LOGGER_ACCESS, ...) ((void)0)
 #endif
 
-#define AlgLogFlush(...) alglog::Global::get().lgr->flush();
-#define AlgLogInitGlobalLogger(S) alglog::Global::get().init_logger(S) // プログラム中で1度のみ呼び出すことができます。
-#define AlgLogReleaseGlobalLogger(S) alglog::Global::get().release_logger(S)
-#define AlgLogInitDefaultGlobalLogger() alglog::Global::get().init_logger(alglog::builtin::get_default_logger());
-
-#undef ALGLOG_LOGGER_ACCESOR
+// note : PRJ_LOGGER_ACCESS の例 Global::get_logger()->
 
 } // end namespace alglog
