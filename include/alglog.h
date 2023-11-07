@@ -488,7 +488,7 @@ namespace builtin{
         auto lgr = std::make_shared<logger>();
         auto snk = std::make_shared<print_sink>();
         lgr->connect_sink(snk);
-        lgr->sync_mode;
+        lgr->sync_mode = true;
         return lgr;
     }
 }
