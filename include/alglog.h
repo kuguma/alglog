@@ -70,7 +70,7 @@
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(GetCurrentProcessId());
     }
-#elif defined(__linux__) || defined (__apple__)
+#else
     #include <sys/types.h>
     #include <unistd.h>
     #include <sys/types.h>
