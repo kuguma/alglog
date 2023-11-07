@@ -52,7 +52,7 @@ FetchContent_MakeAvailable(ALGLOG)
 - 非同期かつスレッドセーフ
 - クロスプラットフォーム
 - `fmtlib`を利用した便利なフォーマット
-- C++11から利用可能
+- C++14から利用可能
 - 日本語のドキュメント😊
 
 ## Highlights

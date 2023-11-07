@@ -17,7 +17,7 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(FMT)
 
-target_compile_features(AlgLog PUBLIC cxx_std_11)
+target_compile_features(AlgLog PUBLIC cxx_std_14)
 
 target_compile_definitions(AlgLog PUBLIC
     FMT_HEADER_ONLY # fmtライブラリをヘッダオンリーで用いる
