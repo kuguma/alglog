@@ -17,6 +17,7 @@
 #include <fstream>
 #include <atomic>
 #include <mutex>
+#include <cassert>
 
 
 /* ----------------------------------------------------------------------------
@@ -236,8 +237,8 @@ private:
     std::mutex logs_mtx;
     std::mutex sinks_mtx;
 public:
-    bool sync_mode = false;
-    logger() {}
+    const bool async_mode;
+    logger(bool async_mode = false) : async_mode(async_mode) {}
     ~logger(){
         flush(); // 終了時に必ずフラッシュする
     }
@@ -265,7 +266,6 @@ public:
 
     // ログを保管する。
     // すべてのログ出力はこのraw_storeを通る。
-    // sync_modeか、ログがいっぱいになった場合のみflushする。
     void raw_store(source_location loc, const level lvl, const std::string& msg){
         log_t log = {
             msg,
@@ -275,9 +275,9 @@ public:
             get_thread_id(),
             loc
         };
-        if (sync_mode){
+        if (!async_mode){
             logs.push_back(log);
-            flush();
+            flush_no_lock();
         }else{
             std::lock_guard<std::mutex> lock(logs_mtx);
             logs.push_back(log);
@@ -394,7 +394,11 @@ private:
     std::unique_ptr<std::thread> flusher_thread = nullptr;
     std::weak_ptr<logger> lgr;
 public:
-    flusher(std::weak_ptr<logger> logger_weak_ptr) : lgr(logger_weak_ptr), flusher_thread_run(false) {}
+    flusher(std::weak_ptr<logger> logger_weak_ptr) : lgr(logger_weak_ptr), flusher_thread_run(false) {
+        if (auto l = lgr.lock()){
+            assert(l->async_mode);
+        }
+    }
     ~flusher(){
         if(flusher_thread){
             flusher_thread_run = false;
@@ -487,7 +491,6 @@ namespace builtin{
         auto lgr = std::make_shared<logger>();
         auto snk = std::make_shared<print_sink>();
         lgr->connect_sink(snk);
-        lgr->sync_mode = true;
         return lgr;
     }
 }

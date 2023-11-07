@@ -58,7 +58,7 @@ FetchContent_MakeAvailable(ALGLOG)
 ## Highlights
 
 - マクロAPIのみ：実用に振り切った設計
-- 非同期出力：実行速度を重視する商用ライブラリで採用可能
+- 非同期出力サポート：実行速度を重視する商用ライブラリで採用可能
 - 商用利用可能：MIT Licenseだが、バイナリ配布は権利表記義務なし
 - グローバルロガーなし：複数プロジェクトで採用しても競合しません
 
@@ -76,9 +76,9 @@ FetchContent_MakeAvailable(ALGLOG)
 
 1. ロガーにログを書き込むと、まずログは`logger`内に蓄積されます。
 
-    デフォルトでは非同期モードが選択されており、蓄積されたログは手動で`logger.flush()`を呼び出すことでフラッシュする必要があります。定期的に出力したい場合、`alglog::flusher`を利用できます（この場合、スレッドが裏で起動されます）。
+    デフォルトでは同期モードで、蓄積と同時に出力が行われます。
 
-    `logger.sync_mode = true`とすることで、同期モードで実行できます。内部のログは、`logger`が解放されるか、内部のコンテナがいっぱいになった場合に自動的に`flush()`されます。
+    非同期モードでalglogを利用するには、loggerのコンストラクタに`true`を与えます。この場合、蓄積されたログは手動で`logger.flush()`を呼び出してフラッシュする必要があります。定期的に出力したい場合、`alglog::flusher`を利用できます（この場合、スレッドが裏で起動されます）。
 
 2. `flush()`されたログは、`logger`が接続している`sink`を通過し、出力されます。`sink`は`valve`と呼ばれる出力条件判定ラムダ関数を持ち、その条件を満たす場合のみ`log`は`sink`を通過します。
 
@@ -93,9 +93,9 @@ FetchContent_MakeAvailable(ALGLOG)
 
 ## API
 
-alglogのロガーはそのまま使うこともできるが、ソースローケーションの埋め込みを行うためにはマクロを経由する必要がある。
+alglogのロガーはそのまま使うこともできますが、ソースローケーションの埋め込みを行うためにはマクロを経由する必要があります。
 
-`alglog-project-logger-template.h`をフォークして、プロジェクト用のロガーを作成することを推奨する。
+`alglog-project-logger-template.h`をフォークして、プロジェクト用のロガーを作成することを推奨します。
 
 ```C++
     MyLogInfo("hello world");
@@ -149,7 +149,7 @@ enum class level{
 ロガーを手動で設定したい
 
 ```C++
-    auto lgr = std::make_shared<alglog::logger>("my_logger");
+    auto lgr = std::make_shared<alglog::logger>(true);
     auto psink = std::make_shared<builtin::print_sink>();
     psink.valve = alglog::builtin::debug_level_output;
     lgr->connect_sink(psink);
@@ -194,7 +194,7 @@ namespace my_project{
 
     class Logger {
     private:
-        Logger() : logger(std::make_shared<alglog::logger>()), flusher(std::make_unique<alglog::flusher>(logger))
+        Logger() : logger(std::make_shared<alglog::logger>(true)), flusher(std::make_unique<alglog::flusher>(logger))
         {
             // modify this
             logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );

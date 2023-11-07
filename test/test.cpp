@@ -57,14 +57,13 @@ int main(){
     {
         auto l_sync = std::make_shared<alglog::logger>();
         l_sync->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_sync.log") );
-        l_sync->sync_mode = true;
         {
             auto t = alglog::time_counter(l_sync, "sync mode");
             for(int i=0; i<100000; ++i){
                 l_sync->trace("log #{} {} {}", i,i,i);
             }
         }
-        auto l_async = std::make_shared<alglog::logger>();
+        auto l_async = std::make_shared<alglog::logger>(true);
         l_async->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async.log") );
         {
             auto t = alglog::time_counter(l_async, "async mode");
@@ -73,7 +72,7 @@ int main(){
             }
             l_async->flush();
         }
-        auto l_async_flush = std::make_shared<alglog::logger>();
+        auto l_async_flush = std::make_shared<alglog::logger>(true);
         l_async_flush->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async_flush.log") );
         {
             auto f = std::make_unique<alglog::flusher>(l_async_flush);

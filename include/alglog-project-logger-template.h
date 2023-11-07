@@ -6,7 +6,7 @@ namespace my_project{
 
     class Logger {
     private:
-        Logger() : logger(std::make_shared<alglog::logger>()), flusher(std::make_unique<alglog::flusher>(logger))
+        Logger() : logger(std::make_shared<alglog::logger>(true)), flusher(std::make_unique<alglog::flusher>(logger))
         {
             // modify this
             logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );
