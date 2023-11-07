@@ -18,7 +18,7 @@ def build(config="Debug"):
         print(f"invalid config = {config}")
         return
     shell(f"cmake -B build -DCMAKE_BUILD_TYPE={config}")
-    shell("cmake --build build")
+    shell(f"cmake --build build --config {config}")
     if platform.system() == "Windows":
         if config == "Debug":
             shell(f"{os.getcwd()}/build/Debug/AlgLog.exe")

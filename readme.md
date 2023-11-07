@@ -10,7 +10,7 @@ alglogは、中規模のC++商用プロジェクトをターゲットとした�
 FetchContent_Declare(
     ALGLOG
     GIT_REPOSITORY https://github.com/kuguma/alglog.git
-    GIT_TAG     0.0.1
+    GIT_TAG     0.1.0
 )
 FetchContent_MakeAvailable(ALGLOG)
 ```
@@ -50,18 +50,17 @@ FetchContent_MakeAvailable(ALGLOG)
 
 - 軽量、高速でシンプルなロガー
 - 非同期かつスレッドセーフ
-- 最低限の機能（コア機能はたった200行！）
 - クロスプラットフォーム
 - `fmtlib`を利用した便利なフォーマット
 - C++11から利用可能
-- MIT License（ただしバイナリ配布は権利表記義務なし）
 - 日本語のドキュメント😊
 
 ## Highlights
 
 - マクロAPIのみ：実用に振り切った設計
 - 非同期出力：実行速度を重視する商用ライブラリで採用可能
-- 複数プロジェクトで採用しても競合しません
+- 商用利用可能：MIT Licenseだが、バイナリ配布は権利表記義務なし
+- グローバルロガーなし：複数プロジェクトで採用しても競合しません
 
 ## 開発経緯
 
@@ -71,69 +70,60 @@ FetchContent_MakeAvailable(ALGLOG)
 
 ## 内部設計
 
-alglogは、以下のような設計になっている。
+`alglog`は、次のように設計されています。
 
-- バイナリ全体に存在するロガーは、グローバルなロガーただ一つ（を推奨）。
-- ロギングの呼び出しはマクロのみ（を推奨）。
+ロガーは`logger`、`sink`、`valve`、および`formatter`から構成されています。
 
-この設計を採用した理由は後述する。
+1. ロガーにログを書き込むと、まずログは`logger`内に蓄積されます。
 
-<br>
+    デフォルトでは非同期モードが選択されており、蓄積されたログは手動で`logger.flush()`を呼び出すことでフラッシュする必要があります。定期的に出力したい場合、`alglog::flusher`を利用できます（この場合、スレッドが裏で起動されます）。
 
-ロガーは`logger`, `sink`, `formatter`から構成される。
+    `logger.sync_mode = true`とすることで、同期モードで実行できます。内部のログは、`logger`が解放されるか、内部のコンテナがいっぱいになった場合に自動的に`flush()`されます。
 
-1. ロガーにログを書き込むと、まずログは`logger`内に蓄積される。
+2. `flush()`されたログは、`logger`が接続している`sink`を通過し、出力されます。`sink`は`valve`と呼ばれる出力条件判定ラムダ関数を持ち、その条件を満たす場合のみ`log`は`sink`を通過します。
 
-    蓄積されたログは、`logger.flush()`を呼び出して手動でflushするか、`logger.flush_every(ms)`を呼び出して定期的に出力することができる。（スレッドが裏で起動される。）
-
-    内部のログは`logger`の解放時に自動的に`flush()`される。
-
-2. `flush()`されたログは、`logger`が接続している`sink`を通り、出力される。`sink`は`valve`という名の出力条件判定ラムダ関数を持ち、その条件を満たす場合のみ`log`は`sink`を通る。
-
-    `sink`には、組み込みで
+    組み込みで以下の`sink`が提供されています。
 
     - `alglog::builtin::file_sink`
     - `alglog::builtin::print_sink`
     
-    などが存在する。
-    
-    もしくは、自分で`alglog::sink`クラスを継承して定義し、`logger.connect_sink()`で任意のロガーに出力することもできる。
+    また、自分で`alglog::sink`クラスを継承し、`logger.connect_sink()`を使用して任意のロガーに出力することもできます。
 
-3. `sink`から出力されるとき、`sink`は自分が持つ`formatter`を通して、ログを整形する。`sink.formatter`はpublicなラムダ変数なので、自分で作成して`sink`に設定することもできる。（もしくは自作sinkの場合は、formatterを無視してもよい。）
+3. `sink`から出力されるとき、`sink`は自身が持つ`formatter`を介してログを整形します。`sink.formatter`はpublicなラムダ変数であり、自分で作成して`sink`に上書き設定することもできます（自作sinkの場合、formatterを無視してもかまいません）。
 
 ## API
 
-alglogでは、グローバルなロガーにsink等の設定を行った後は、マクロを呼び出してログを記録するAPIになっている。
+alglogのロガーはそのまま使うこともできるが、ソースローケーションの埋め込みを行うためにはマクロを経由する必要がある。
 
-`AlgLogXXX()`のような形で呼び出しを行う。`()`内は`fmt`の機能が使える。
+`alglog-project-logger-template.h`をフォークして、プロジェクト用のロガーを作成することを推奨する。
 
 ```C++
-    AlgLogInfo("hello world");
-    AlgLogDebug("The answer is {}.", 42);
+    MyLogInfo("hello world");
+    MyLogDebug("The answer is {}.", 42);
 
     std::vector<int> vec = {1,2,3,4,5};
-    AlgLogTrace("vector =  {}", vec);
+    MyLogTrace("vector =  {}", vec);
 
 ```
 
 
 ## ログレベル
 
-alglogは、リリースビルド用に3段階、デバッグ用に4段階のログレベルを持つ。
+alglogは、リリースビルド用に3段階、デバッグ用に4段階のログレベルを持ちます。
 
-リリースビルド用の3段階はユーザー公開用のログになり、ソース情報等の細かい情報は含まれない。
+リリースビルド用の3段階はユーザー公開用のログになり、ソース情報等の細かい情報は含まれません。
 
-デバッグ用の4段階は、リリースビルドではバイナリから消滅する。
+デバッグ用の4段階は、リリースビルドではバイナリから消滅します。
 
 ```C++
 enum class level{
 // -------------------------------------------------------------------------------------------------- ↓リリースビルドに含まれる
-    error = 0, // ユーザー向けエラー情報ログ：APIの発射する例外を補足する形を想定。
+    error = 0, // ユーザー向けエラー情報ログ：APIの投げた例外を補足する形などを想定。
     alart, // ユーザー向け警告ログ：ユーザーの意図しないフォールバック等が行われた場合の出力利用を想定。
-    info, // ユーザー向け情報提供ログ：API呼び出し履歴等を想定。
+    info, // ユーザー向け情報提供ログ：API呼び出し履歴などを想定。
 // -------------------------------------------------------------------------------------------------- ↓デバッグビルドに含まれる
     critical, // 致命的な内部エラー：assertと組み合わせて使うと効果的。
-    warn, // assertを掛けるまでではないが、なんか嫌な感じのことが起こってるときに出す。
+    warn, // assertを掛けるまでではないが、何か嫌な感じのことが起こってるときに出す。
     debug, // 理想的には、このログを眺めるだけでプログラムの挙動の全体の流れを理解できるようになっていると良い。
 // -------------------------------------------------------------------------------------------------- ↓デバッグビルドかつALGLOG_TRACEのときに含まれる
     trace // 挙動を追うときに使う詳細なログ。機能開発中や、込み入ったバグを追いかけるときに使う。
@@ -145,31 +135,27 @@ enum class level{
 とにかくすぐロガーが使いたい
 
 ```C++
-    // 多少奇妙に見えるかもしれませんが、alglogではマクロ呼び出しを経由しない呼び出しを推奨していません（後述）
-    // コンパイルスイッチを確実に動作させるためにも、ログ記録時はマクロ呼び出しを利用してください。
-
     #include <alglog.h>
 
     auto logger = alglog::builtin::get_default_logger();
 
-    #define LOG(...) AlgLogDebug(logger., __VA_ARGS__)
-
-    LOG("hello world");
-    LOG("The answer is {}.", 42);
+    logger->info("hello world");
+    logger->debug("The answer is {}.", 42);
 
     std::vector<int> vec = {1,2,3,4,5};
-    LOG("vector =  {}", vec);
+    logger->trace("vector =  {}", vec);
 ```
 
 ロガーを手動で設定したい
 
 ```C++
-    auto lgr = std::make_unique<alglog::logger>("my_logger");
+    auto lgr = std::make_shared<alglog::logger>("my_logger");
     auto psink = std::make_shared<builtin::print_sink>();
     psink.valve = alglog::builtin::debug_level_output;
     lgr->connect_sink(psink);
     lgr->connect_sink( std::make_shared<builtin::file_sink>("my_logger.log") );
-    lgr->flush_every(std::chrono::milliseconds(500));
+    auto flusher = std::make_unique<alglog::flusher>(lgr);
+    flusher.start(500);
 
     // loggerの出力先は、alglog::sinkを継承した自作クラスを用いてカスタムできます。
     // あるsinkが出力を行うかどうかは、sink.valveにラムダを設定することで制御できます。
@@ -192,7 +178,9 @@ sinkにカスタムvalveを設定することで解決できます。
 
 想定された運用方法
 
-alglogでは、`alglog.h`をラップしたヘッダ（プロジェクトロガーヘッダ）を作成してもらうことを想定しています。
+alglogでは、`alglog.h`をラップしたヘッダ（プロジェクトロガーヘッダ）を作成し、マクロ経由で呼び出してもらうことを想定しています。
+
+`alglog-project-logger-template.h`を参照してください。
 
 ```C++
 
@@ -206,17 +194,18 @@ namespace my_project{
 
     class Logger {
     private:
-        Logger() : logger(std::make_unique<alglog::logger>())
+        Logger() : logger(std::make_shared<alglog::logger>()), flusher(std::make_unique<alglog::flusher>(logger))
         {
             // modify this
             logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );
             logger->connect_sink( std::make_shared<alglog::builtin::file_sink>("my_project.log") );
-            logger->flush_every(std::chrono::milliseconds(500));
+            flusher->start();
         };
         ~Logger() = default;
 
     public:
         std::shared_ptr<alglog::logger> logger;
+        std::unique_ptr<alglog::flusher> flusher;
         Logger(const Logger&) = delete;
         Logger& operator=(const Logger&) = delete;
         Logger(Logger&&) = delete;
@@ -230,14 +219,13 @@ namespace my_project{
 
 }
 
-#define MyLogError(...) AlgLogError(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogAlart(...) AlgLogAlart(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogInfo(...) AlgLogInfo(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogCritical(...) AlgLogCritical(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogWarn(...) AlgLogWarn(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogDebug(...) AlgLogDebug(my_project::Logger::get().logger->, __VA_ARGS__)
-#define MyLogTrace(...) AlgLogTrace(my_project::Logger::get().logger->, __VA_ARGS__)
-
+#define MyLogError(...) my_project::Logger::get().logger->error(__VA_ARGS__)
+#define MyLogAlart(...) my_project::Logger::get().logger->alart(__VA_ARGS__)
+#define MyLogInfo(...) my_project::Logger::get().logger->info(__VA_ARGS__)
+#define MyLogCritical(...) my_project::Logger::get().logger->critical(ALGLOG_SR, __VA_ARGS__)
+#define MyLogWarn(...) my_project::Logger::get().logger->warn(ALGLOG_SR, __VA_ARGS__)
+#define MyLogDebug(...) my_project::Logger::get().logger->debug(ALGLOG_SR, __VA_ARGS__)
+#define MyLogTrace(...) my_project::Logger::get().logger->trace(ALGLOG_SR, __VA_ARGS__)
 
 
 //　---------------- something.cpp ----------------
@@ -249,8 +237,8 @@ namespace my_project{
 
 ## コンパイルスイッチ
 
-include前にこれらのキーワードを定義するか、コンパイラに引数として与えることで、ログ出力がバイナリに含まれるかを制御できる。
-デフォルト挙動では、`alglog`はすべてのレベルのログを出力する。
+include前にこれらのキーワードを定義するか、コンパイラに引数として与えることで、ログ出力がバイナリに含まれるかを制御できます。
+デフォルト挙動では、`alglog`はすべてのレベルのログを出力します。
 
 ```C++
 #define ALGLOG_ALL_OFF // すべてのログ出力を無効化する。
@@ -263,7 +251,7 @@ include前にこれらのキーワードを定義するか、コンパイラに�
 
 ## 設計に関する考察
 
-### なぜマクロAPIなのか
+### なぜマクロAPIを推奨するのか
 
 C++でロガーライブラリを構築する場合、以下のような制約と向き合う必要があります。
 
@@ -271,8 +259,7 @@ C++でロガーライブラリを構築する場合、以下のような制約�
 - デバッグにおいては、ソース情報は必須である。
 - マクロにはnamespaceがない。
 
-残念ながらC++20未満の環境では、関数呼び出しによるロギング方法を提供したとしても殆ど使われないでしょう。
-したがって、いっそマクロ呼び出しのみを想定した設計にしてしまおうというのがalglogの設計方針です。
+従って、C++20未満の環境では、残念ながらマクロを使ったログ呼び出しを基本として設計を行う必要があります。
 
 ### 複数プロジェクトでの運用
 

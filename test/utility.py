@@ -34,11 +34,29 @@ def clear_screen():
     else:
         subprocess.run("clear", shell=True)
 
+def rmtree_onerror(func, path, exc_info):
+    """
+    Error handler for ``shutil.rmtree``.
+
+    If the error is due to an access error (read only file)
+    it attempts to add write permission and then retries.
+
+    If the error is for another reason it re-raises the error.
+
+    Usage : ``shutil.rmtree(path, onerror=onerror)``
+    """
+    import stat
+    # Is the error an access error?
+    if not os.access(path, os.W_OK):
+        os.chmod(path, stat.S_IWUSR)
+        func(path)
+    else:
+        raise
 # ディレクトリが存在していた場合に削除する
 def rm_dir_if_exists(dir):
     if os.path.isdir(dir):
         try:
-            shutil.rmtree(dir)
+            shutil.rmtree(dir, onerror=rmtree_onerror)
         except Exception as e:
             print(str(e))
             raise e
