@@ -390,11 +390,11 @@ public:
 // 定期的にロガーをフラッシュしたい場合に使えるヘルパークラス
 class flusher{
 private:
-    std::atomic<bool> flusher_thread_run = false;
+    std::atomic<bool> flusher_thread_run;
     std::unique_ptr<std::thread> flusher_thread = nullptr;
     std::weak_ptr<logger> lgr;
 public:
-    flusher(std::weak_ptr<logger> logger_weak_ptr) : lgr(logger_weak_ptr) {}
+    flusher(std::weak_ptr<logger> logger_weak_ptr) : lgr(logger_weak_ptr), flusher_thread_run(false) {}
     ~flusher(){
         if(flusher_thread){
             flusher_thread_run = false;
@@ -407,8 +407,8 @@ public:
     // TODO スレッド優先度を最低にする
     void start(int interval_ms = 500){
         auto interval = std::chrono::milliseconds(interval_ms);
+        flusher_thread_run = true;
         flusher_thread = std::make_unique<std::thread>([&,interval]{
-            flusher_thread_run = true;
             #ifndef ALGLOG_INTERNAL_OFF
                 if (auto l = lgr.lock()){
                     l->raw_store(level::debug, "[alglog] start periodic flashing");
@@ -422,7 +422,6 @@ public:
                     break; // loggerが解放された場合、flusherのスレッドも終了する
                 }
             }
-            flusher_thread_run = false;
         });
     }
 };

@@ -93,8 +93,10 @@ int main(){
     //         if (i == 500){
     //             vec.clear();
     //             l->debug("for error {}", i/0);
+    //             throw;
     //         }
     //     }
     // }
 
+    std::cout << "end" << std::endl;
 }
