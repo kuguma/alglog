@@ -1,3 +1,6 @@
+// Copyright(c) 2023-present, Kai Aoki
+// Under MIT license, but binary embeddable without copyright notice.
+
 #pragma once
 
 #include <fmt/format.h>
@@ -28,16 +31,12 @@
 
 /*
     < usage >
+    次のケースでの利用を推奨する。
 
-    AlgLogではマクロ経由での呼び出しのみをサポートしている。
-    ・ソース情報を埋め込むため
-    ・コンパイルスイッチを確実に動作させるため
     1. alglog-project-logger-template.h を参考に、プロジェクトロガーのヘッダソースを作成する。
         Loggerのコンストラクタでsinkやフォーマッタを設定する。
         AlgLogXXXをラップした自作マクロを定義する。
-    2. プロジェクトのソースからは、alglog.hではなく先ほど作成したプロジェクトロガーをincludeするようにする。
-
-    ・AlgLogXXのマクロを経由せずに呼び出した場合、コンパイルオプションで消滅しない。
+    2. プロジェクトの各ソースからは、alglog.hではなく先ほど作成したプロジェクトロガーをincludeするようにする。
 */
 
 
@@ -407,7 +406,7 @@ public:
     }
 
     // intervalミリ秒ごとにloggerをフラッシュする。
-    // intervalを短くしすぎるとメインプログラムの挙動に影響が出る可能性があります。
+    // intervalを短くしすぎるとメインプログラムの挙動に影響が出る可能性がある。
     // TODO スレッド優先度を最低にする
     void start(int interval_ms = 500){
         auto interval = std::chrono::milliseconds(interval_ms);
