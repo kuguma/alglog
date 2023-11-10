@@ -427,6 +427,9 @@ public:
             }
         });
     }
+    void stop(){
+        flusher_thread_run = false;
+    }
 };
 
 // ------------------------------------
@@ -442,16 +445,14 @@ namespace builtin{
         };
         // デバッグ時ファイル出力向けのフォーマッタ。全てのパラメータを出力する
         const auto full = [](const log_t& l) -> std::string {
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(l.time.time_since_epoch()).count() % 1000;
-            return fmt::format("[{:%F %T}.{:04}] [{}] [process {:>8}] [thread {:>8}] [{:>24}:{:<4}({:>24})] | {}",
-                l.time, ms, l.get_level_str(), l.pid, l.tid, l.loc.file, l.loc.line, l.loc.func, l.msg );
+            return fmt::format("[{:%F %T}] [{}] [process {:>8}] [thread {:>8}] [{:>24}:{:<4}({:>24})] | {}",
+                l.time, l.get_level_str(), l.pid, l.tid, l.loc.file, l.loc.line, l.loc.func, l.msg );
             // ref : https://cpprefjp.github.io/reference/chrono/format.html
         };
         // デバッグ時コンソール出力向けのフォーマッタ
         const auto console = [](const log_t& l) -> std::string {
-            auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(l.time.time_since_epoch()).count() % 1000;
-            return fmt::format("[{:%T}.{:04}] [{}] [{:>24}: {:<4}({:>24})] | {}",
-                l.time, ms, l.get_level_str(), l.loc.file, l.loc.line, l.loc.func, l.msg );
+            return fmt::format("[{:%T}] [{}] [{:>24}: {:<4}({:>24})] | {}",
+                l.time, l.get_level_str(), l.loc.file, l.loc.line, l.loc.func, l.msg );
         };
 
     }
@@ -459,8 +460,9 @@ namespace builtin{
 // valve
     namespace valve{
         const auto always_open = [](const log_t& l){return true;};
-        const auto except_trace = [](const log_t& l){if (l.lvl != level::trace) {true;} else {false;}};
-        const auto release_mode = [](const log_t& l){if (static_cast<int>(l.lvl) <= static_cast<int>(level::info)) {true;} else {false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
+        const auto except_trace = [](const log_t& l){if (l.lvl != level::trace) {return true;} else {return false;}};
+        const auto release_mode = [](const log_t& l){if (static_cast<int>(l.lvl) <= static_cast<int>(level::info)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
+        const auto debug_mode = [](const log_t& l){if (static_cast<int>(level::critical) <= static_cast<int>(l.lvl)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
     }
 
 // sink
