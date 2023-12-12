@@ -1,7 +1,12 @@
 // Copyright(c) 2023-present, Kai Aoki
 // Under MIT license, but binary embeddable without copyright notice.
+// https://github.com/kuguma/alglog
 
 #pragma once
+
+#ifndef ALGLOG_DIRECT_INCLUDE_GUARD
+    #error "Direct inclusion of alglog.h is prohibited"
+#endif
 
 #include <fmt/format.h>
 #include <fmt/ostream.h>
@@ -52,6 +57,8 @@
     #define ALGLOG_DEBUG_OFF
     #define ALGLOG_TRACE_OFF
     #define ALGLOG_INTERNAL_OFF
+#elif defined(ALGLOG_ALL_ON)
+    // pass
 #elif defined(NDEBUG) || ( defined(_MSC_VER) && (!defined(_DEBUG)) )
     #define ALGLOG_CRITICAL_OFF
     #define ALGLOG_WARN_OFF
@@ -461,8 +468,8 @@ namespace builtin{
     namespace valve{
         const auto always_open = [](const log_t& l){return true;};
         const auto except_trace = [](const log_t& l){if (l.lvl != level::trace) {return true;} else {return false;}};
-        const auto release_mode = [](const log_t& l){if (static_cast<int>(l.lvl) <= static_cast<int>(level::info)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
-        const auto debug_mode = [](const log_t& l){if (static_cast<int>(level::critical) <= static_cast<int>(l.lvl)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
+        const auto release_only = [](const log_t& l){if (static_cast<int>(l.lvl) <= static_cast<int>(level::info)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
+        const auto debug_only = [](const log_t& l){if (static_cast<int>(level::critical) <= static_cast<int>(l.lvl)) {return true;} else {return false;}}; // デバッグモードのシミュレートをするだけでバイナリからは消えない。
     }
 
 // sink
