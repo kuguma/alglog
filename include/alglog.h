@@ -47,10 +47,10 @@
 
 // compile switch -------------------------------------------------
 
-// デフォルト動作では、ERROR, ALART, INFOのみがリリースビルドで残る。
+// デフォルト動作では、ERROR, ALERT, INFOのみがリリースビルドで残る。
 #ifdef ALGLOG_ALL_OFF
     #define ALGLOG_ERROR_OFF
-    #define ALGLOG_ALART_OFF
+    #define ALGLOG_ALERT_OFF
     #define ALGLOG_INFO_OFF
     #define ALGLOG_CRITICAL_OFF
     #define ALGLOG_WARN_OFF
@@ -131,7 +131,7 @@ namespace alglog{
 enum class level{
 // -------------------------------------------------------------------------------------------------- ↓リリースビルドに含まれる
     error = 0, // ユーザー向けエラー情報ログ：APIの投げた例外を補足する形などを想定。
-    alart, // ユーザー向け警告ログ：ユーザーの意図しないフォールバック等が行われた場合の出力利用を想定。
+    alert, // ユーザー向け警告ログ：ユーザーの意図しないフォールバック等が行われた場合の出力利用を想定。
     info, // ユーザー向け情報提供ログ：API呼び出し履歴などを想定。
 // -------------------------------------------------------------------------------------------------- ↓デバッグビルドに含まれる
     critical, // 致命的な内部エラー：assertと組み合わせて使うと効果的。
@@ -164,7 +164,7 @@ struct log_t{
         if (lvl == level::error){
             return " ERR";
         }
-        if (lvl == level::alart){
+        if (lvl == level::alert){
             return "ALRT";
         }
         if (lvl == level::info){
@@ -319,9 +319,9 @@ public:
     }
 
     template <class ... T>
-    void alart(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_ALART_OFF
-            raw_store(level::alart, fmt::format(fmt, std::forward<T>(args)...));
+    void alert(fmt::format_string<T...> fmt, T&&... args){
+        #ifndef ALGLOG_ALERT_OFF
+            raw_store(level::alert, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 

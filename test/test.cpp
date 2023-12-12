@@ -16,7 +16,7 @@ int main(){
 
     // level
     MyLogError("log");
-    MyLogAlart("log");
+    MyLogAlert("log");
     MyLogInfo("log");
     MyLogCritical("log");
     MyLogWarn("log");

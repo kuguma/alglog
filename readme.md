@@ -101,7 +101,7 @@ alglogは、顧客公開用に3段階、デバッグ用に4段階のログレベ
 enum class level{
 // -------------------------------------------------------------------------------------------------- ↓リリースビルドに含まれる
     error = 0, // ユーザー向けエラー情報ログ：APIの投げた例外を補足する形などを想定。
-    alart, // ユーザー向け警告ログ：ユーザーの意図しないフォールバック等が行われた場合の出力利用を想定。
+    alert, // ユーザー向け警告ログ：ユーザーの意図しないフォールバック等が行われた場合の出力利用を想定。
     info, // ユーザー向け情報提供ログ：API呼び出し履歴などを想定。
 // -------------------------------------------------------------------------------------------------- ↓デバッグビルドに含まれる
     critical, // 致命的な内部エラー：assertと組み合わせて使うと効果的。
@@ -120,7 +120,7 @@ include前にこれらのキーワードを定義するか、コンパイラに�
 ```C++
 #define ALGLOG_ALL_OFF // すべてのログ出力を無効化する。
 #define ALGLOG_<LOG_LEVEL>_OFF // <LOG_LEVEL>出力を無効化する。
-#define NDEBUG // (cmakeのReleaseビルド標準）error, alart, info出力以外を無効化する。
+#define NDEBUG // (cmakeのReleaseビルド標準）error, alert, info出力以外を無効化する。
 
 #define ALGLOG_GETPID_OFF // プロセスIDを取得しない。
 #define ALGLOG_GETTID_OFF // スレッドIDを取得しない。
@@ -188,7 +188,7 @@ namespace my_project{
 }
 
 #define MyLogError(...) my_project::Logger::get().logger->error(__VA_ARGS__)
-#define MyLogAlart(...) my_project::Logger::get().logger->alart(__VA_ARGS__)
+#define MyLogAlert(...) my_project::Logger::get().logger->alert(__VA_ARGS__)
 #define MyLogInfo(...) my_project::Logger::get().logger->info(__VA_ARGS__)
 #define MyLogCritical(...) my_project::Logger::get().logger->critical(ALGLOG_SR, __VA_ARGS__)
 #define MyLogWarn(...) my_project::Logger::get().logger->warn(ALGLOG_SR, __VA_ARGS__)
