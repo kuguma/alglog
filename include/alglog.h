@@ -495,30 +495,42 @@ namespace builtin{
         }
     };
 
+    namespace color{
+        // https://www.schemecolor.com/time-plan.php
+        static constexpr uint32_t watermelon_red = 0xC3443D;
+        static constexpr uint32_t mellow_apricot = 0xFABA76;
+        static constexpr uint32_t caramel = 0xFADE9B;
+        static constexpr uint32_t pearl_aqua = 0x85D6B2;
+        static constexpr uint32_t moonstone = 0x3F9EBD;
+        static constexpr uint32_t stpatricks_blue = 0x2B2D7C;
+    }
+
     struct color_print_sink : public print_sink{
+
+
         void output(const log_t& l) override {
             auto fg_color = fmt::color::white;
             switch(l.lvl){
                 case level::error:
-                    fg_color = fmt::color::deep_pink;
+                    fg_color = static_cast<fmt::color>(color::watermelon_red);
                     break;
                 case level::alert:
-                    fg_color = fmt::color::orange_red;
+                    fg_color = static_cast<fmt::color>(color::mellow_apricot);
                     break;
                 case level::info:
-                    fg_color = fmt::color::deep_sky_blue;
+                    fg_color = static_cast<fmt::color>(color::pearl_aqua);
                     break;
                 case level::critical:
-                    fg_color = fmt::color::crimson;
+                    fg_color = static_cast<fmt::color>(color::watermelon_red);
                     break;
                 case level::warn:
-                    fg_color = fmt::color::gold;
+                    fg_color = static_cast<fmt::color>(color::caramel);
                     break;
                 case level::debug:
-                    fg_color = fmt::color::pale_green;
+                    fg_color = static_cast<fmt::color>(color::moonstone);
                     break;
                 case level::trace:
-                    fg_color = fmt::color::light_blue;
+                    fg_color = fmt::color::light_slate_gray;
                     break;
                 default:
                     break; 
