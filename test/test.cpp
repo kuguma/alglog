@@ -37,7 +37,7 @@ int main(){
                 std::random_device rnd;
                 mt.seed(rnd());
                 for(int i=0; i<10; ++i){
-                    MyLogDebug("[ thread {} ] val = {}", tnum, i);
+                    MyLogTrace("[ thread {} ] val = {}", tnum, i);
                     std::this_thread::sleep_for(std::chrono::milliseconds(mt() % 10));
                 }
             }, j

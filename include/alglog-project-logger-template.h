@@ -10,7 +10,7 @@ namespace my_project{
         Logger() : logger(std::make_shared<alglog::logger>(true)), flusher(std::make_unique<alglog::flusher>(logger))
         {
             // modify this
-            logger->connect_sink( std::make_shared<alglog::builtin::print_sink>() );
+            logger->connect_sink( std::make_shared<alglog::builtin::color_print_sink>() );
             logger->connect_sink( std::make_shared<alglog::builtin::file_sink>("my_project.log") );
             flusher->start();
         };
@@ -33,7 +33,7 @@ namespace my_project{
 }
 
 #define MyLogError(...) my_project::Logger::get().logger->error(__VA_ARGS__)
-#define MyLogAlart(...) my_project::Logger::get().logger->alart(__VA_ARGS__)
+#define MyLogAlert(...) my_project::Logger::get().logger->alert(__VA_ARGS__)
 #define MyLogInfo(...) my_project::Logger::get().logger->info(__VA_ARGS__)
 #define MyLogCritical(...) my_project::Logger::get().logger->critical(ALGLOG_SR, __VA_ARGS__)
 #define MyLogWarn(...) my_project::Logger::get().logger->warn(ALGLOG_SR, __VA_ARGS__)

@@ -13,6 +13,7 @@
 #include <fmt/ranges.h>
 #include <fmt/chrono.h>
 #include <fmt/std.h>
+#include <fmt/color.h>
 #include <iostream>
 #include <chrono>
 #include <thread>
@@ -494,10 +495,42 @@ namespace builtin{
         }
     };
 
+    struct color_print_sink : public print_sink{
+        void output(const log_t& l) override {
+            auto fg_color = fmt::color::white;
+            switch(l.lvl){
+                case level::error:
+                    fg_color = fmt::color::deep_pink;
+                    break;
+                case level::alert:
+                    fg_color = fmt::color::orange_red;
+                    break;
+                case level::info:
+                    fg_color = fmt::color::deep_sky_blue;
+                    break;
+                case level::critical:
+                    fg_color = fmt::color::crimson;
+                    break;
+                case level::warn:
+                    fg_color = fmt::color::gold;
+                    break;
+                case level::debug:
+                    fg_color = fmt::color::pale_green;
+                    break;
+                case level::trace:
+                    fg_color = fmt::color::light_blue;
+                    break;
+                default:
+                    break; 
+            }
+            fmt::print(fg(fg_color), formatter(l) + "\n");
+        }
+    };
+
     // 標準出力に対して出力する同期ロガーを取得する
     inline std::shared_ptr<logger> get_default_logger(){
         auto lgr = std::make_shared<logger>();
-        auto snk = std::make_shared<print_sink>();
+        auto snk = std::make_shared<color_print_sink>();
         lgr->connect_sink(snk);
         return lgr;
     }
