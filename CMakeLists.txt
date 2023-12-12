@@ -1,15 +1,12 @@
 cmake_minimum_required(VERSION 3.15)
 
-Include(FetchContent)
-
 project(ALGLOG)
+
+option(ALGLOG_BUILD_TESTS "Build the test programs" OFF)
 
 find_package(Threads REQUIRED)
 
-add_executable(AlgLog
-    
-)
-
+Include(FetchContent)
 FetchContent_Declare(
     FMT
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
@@ -17,27 +14,35 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(FMT)
 
-target_compile_features(AlgLog PUBLIC cxx_std_14)
+if (ALGLOG_BUILD_TESTS)
+    add_executable(AlgLog)
 
-target_compile_definitions(AlgLog PUBLIC
-    FMT_HEADER_ONLY # fmtライブラリをヘッダオンリーで用いる
-)
+    target_sources(AlgLog PRIVATE
+        test/test.cpp
+        test/test_multi_include.cpp
+    )
+    
+    target_compile_features(AlgLog PUBLIC cxx_std_14)
+    target_compile_definitions(AlgLog PUBLIC
+        FMT_HEADER_ONLY # fmtライブラリをヘッダオンリーで用いる
+    )
+    target_compile_options( AlgLog PRIVATE
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX>
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
+    )
+
+    target_include_directories(AlgLog PUBLIC
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        ${FMT_SOURCE_DIR}/include # FetchContentでXXXを取得すると、XXX_SOURCE_DIRでソースディレクトリのパスが取れる
+    )
+    
+    target_link_libraries(AlgLog PRIVATE
+        Threads::Threads
+    )
+endif()
+
 
 # add_subdirectory("...")
-
-target_sources(AlgLog PRIVATE
-    test/test.cpp
-    test/test_multi_include.cpp
-)
-
-target_include_directories(AlgLog PUBLIC
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    ${FMT_SOURCE_DIR}/include # FetchContentでXXXを取得すると、XXX_SOURCE_DIRでソースディレクトリのパスが取れる
-)
-
-target_link_libraries(AlgLog PRIVATE
-    Threads::Threads
-)
 
 # target_link_directories(AlgLog PUBLIC
 #     ...

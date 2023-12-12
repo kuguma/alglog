@@ -128,7 +128,7 @@ include前にこれらのキーワードを定義するか、コンパイラに�
 
 ## How to use / Q & A
 
-### とにかくすぐロガーが使いたい
+### とにかくすぐロガーが使いたい（非推奨）
 
 ```C++
     #include <alglog.h>
@@ -142,35 +142,6 @@ include前にこれらのキーワードを定義するか、コンパイラに�
     logger->trace("vector =  {}", vec);
 ```
 
-### ロガーを手動で設定したい
-
-```C++
-    auto lgr = std::make_shared<alglog::logger>(true);
-    auto psink = std::make_shared<builtin::print_sink>();
-    psink.valve = alglog::builtin::debug_level_output;
-    lgr->connect_sink(psink);
-    lgr->connect_sink( std::make_shared<builtin::file_sink>("my_logger.log") );
-    auto flusher = std::make_unique<alglog::flusher>(lgr);
-    flusher.start(500);
-
-    // loggerの出力先は、alglog::sinkを継承した自作クラスを用いてカスタムできます。
-    // あるsinkが出力を行うかどうかは、sink.valveにラムダを設定することで制御できます。
-```
-
-### 特定の機能のログだけを表示したい
-
-sinkにカスタムvalveを設定することで解決できます。
-
-
-```C++
-    const auto keyword_valve = [](const log_t& l){
-        if (l.find("keyword")){
-            return true;
-        }
-        return false;
-    };
-```
-
 
 ### プロジェクトロガーの作成（推奨）
 
@@ -180,10 +151,11 @@ alglogでは、`alglog.h`をラップしたヘッダ（プロジェクトロガ�
 
 ```C++
 
-// ---------------- my_logger.h ----------------
+// ---------------- mylogger.h ----------------
 
 #pragma once
 
+#define ALGLOG_DIRECT_INCLUDE_GUARD
 #include <alglog.h>
 
 namespace my_project{
@@ -226,9 +198,39 @@ namespace my_project{
 
 //　---------------- something.cpp ----------------
 
-    #include <mylogger.h>
-    // ... other includes ... 
+#define ALGLOG_DIRECT_INCLUDE_GUARD
+#include <mylogger.h>
+// ... other includes ... 
 
+```
+
+### ロガーを手動で設定したい
+
+```C++
+    auto lgr = std::make_shared<alglog::logger>(true);
+    auto psink = std::make_shared<builtin::print_sink>();
+    psink.valve = alglog::builtin::debug_level_output;
+    lgr->connect_sink(psink);
+    lgr->connect_sink( std::make_shared<builtin::file_sink>("my_logger.log") );
+    auto flusher = std::make_unique<alglog::flusher>(lgr);
+    flusher.start(500);
+
+    // loggerの出力先は、alglog::sinkを継承した自作クラスを用いてカスタムできます。
+    // あるsinkが出力を行うかどうかは、sink.valveにラムダを設定することで制御できます。
+```
+
+### 特定の機能のログだけを表示したい
+
+sinkにカスタムvalveを設定することで解決できます。
+
+
+```C++
+    const auto keyword_valve = [](const log_t& l){
+        if (l.find("keyword")){
+            return true;
+        }
+        return false;
+    };
 ```
 
 ## 設計に関する考察

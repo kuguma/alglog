@@ -17,7 +17,7 @@ def build(config="Debug"):
     if config not in ["Debug","Release"]:
         print(f"invalid config = {config}")
         return
-    shell(f"cmake -B build -DCMAKE_BUILD_TYPE={config}")
+    shell(f"cmake -B build -DCMAKE_BUILD_TYPE={config} -DALGLOG_BUILD_TESTS=ON")
     shell(f"cmake --build build --config {config}")
     if platform.system() == "Windows":
         if config == "Debug":
