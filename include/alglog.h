@@ -5,7 +5,7 @@
 #pragma once
 
 #ifndef ALGLOG_DIRECT_INCLUDE_GUARD
-    #error "Direct inclusion of alglog.h is prohibited"
+    #error "Direct inclusion of alglog.h is prohibited. Create project logger and define ALGLOG_DIRECT_INCLUDE_GUARD before include this. (see readme.md)"
 #endif
 
 #include <fmt/format.h>
@@ -396,9 +396,9 @@ public:
 // 定期的にロガーをフラッシュしたい場合に使えるヘルパークラス
 class flusher{
 private:
+    std::weak_ptr<logger> lgr;
     std::atomic<bool> flusher_thread_run;
     std::unique_ptr<std::thread> flusher_thread = nullptr;
-    std::weak_ptr<logger> lgr;
 public:
     flusher(std::weak_ptr<logger> logger_weak_ptr) : lgr(logger_weak_ptr), flusher_thread_run(false) {
         if (auto l = lgr.lock()){
@@ -466,7 +466,7 @@ namespace builtin{
 
 // valve
     namespace valve{
-        const auto always_open = [](const log_t& l){return true;};
+        const auto always_open = [](const log_t&){return true;};
         const auto except_trace = [](const log_t& l){if (l.lvl != level::trace) {return true;} else {return false;}};
         const auto release_only = [](const log_t& l){if (static_cast<int>(l.lvl) <= static_cast<int>(level::info)) {return true;} else {return false;}}; // リリースモードのシミュレートをするだけでバイナリからは消えない。
         const auto debug_only = [](const log_t& l){if (static_cast<int>(level::critical) <= static_cast<int>(l.lvl)) {return true;} else {return false;}}; // デバッグモードのシミュレートをするだけでバイナリからは消えない。

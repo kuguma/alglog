@@ -1,5 +1,6 @@
 #pragma once
 
+#define ALGLOG_DIRECT_INCLUDE_GUARD
 #include <alglog.h>
 
 namespace my_project{
