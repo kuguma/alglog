@@ -235,6 +235,7 @@ struct sink{
             }
         }
     }
+    virtual ~sink(){}
 };
 
 class logger{
@@ -506,8 +507,6 @@ namespace builtin{
     }
 
     struct color_print_sink : public print_sink{
-
-
         void output(const log_t& l) override {
             auto fg_color = fmt::color::white;
             switch(l.lvl){
