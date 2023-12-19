@@ -27,8 +27,8 @@ if (ALGLOG_BUILD_TESTS)
         FMT_HEADER_ONLY # fmtライブラリをヘッダオンリーで用いる
     )
     target_compile_options( AlgLog PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /wd"4819">
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror>
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /WX /wd"4819" /wd"4100">
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror -Wno-unused-parameter>
     )
 
     target_include_directories(AlgLog PUBLIC
