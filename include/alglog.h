@@ -121,7 +121,7 @@
         return 0;
     }
 
-    #define __ALGLOG_FNAME__ (__FILE__ + _alglog_fname_offset(__FILE__))
+    #define __ALGLOG_FNAME__ ((const char*)__FILE__ + _alglog_fname_offset(__FILE__))
 #endif
 
 // -------------------------------------------------------
