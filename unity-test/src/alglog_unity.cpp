@@ -1,13 +1,11 @@
 #include <alglog.h>
 #include <string>
 
-#if defined(_MSC_VER)
-#define EXPORT_API __declspec(dllexport)
+#ifdef _MSC_VER
+    #define EXPORT_API extern "C" __declspec(dllexport)
 #else
-#define EXPORT_API
+    #define EXPORT_API extern "C" __attribute__((visibility("default")))
 #endif
-
-extern "C" {
 
 EXPORT_API void* CreateLogger(bool async_mode) {
     return new alglog::logger(async_mode);
@@ -37,6 +35,4 @@ EXPORT_API void LogMessage(void* logger_ptr, int level, const char* message) {
 EXPORT_API void FlushLogger(void* logger_ptr) {
     if (!logger_ptr) return;
     static_cast<alglog::logger*>(logger_ptr)->flush();
-}
-
 }
