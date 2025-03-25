@@ -26,11 +26,12 @@ jobs:
       run: cmake --build build --config ${{ matrix.build_type }}
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: build-${{ matrix.os }}-${{ matrix.build_type }}
         path: build/
         retention-days: 7
+        compression-level: 6  # 新しいオプション: 圧縮レベルを指定可能 (0-9)
 
     - name: Run Test (Windows)
       if: runner.os == 'Windows'
