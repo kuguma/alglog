@@ -21,11 +21,11 @@ def build(config="Debug"):
     shell(f"cmake --build build --config {config}")
     if platform.system() == "Windows":
         if config == "Debug":
-            shell(f"{os.getcwd()}/build/Debug/AlgLog.exe")
+            shell(f"{os.getcwd()}/build/test/Debug/AlgLogTest.exe")
         else:
-            shell(f"{os.getcwd()}/build/Release/AlgLog.exe")
+            shell(f"{os.getcwd()}/build/test/Release/AlgLogTest.exe")
     else:
-        shell(f"{os.getcwd()}/build/AlgLog")
+        shell(f"{os.getcwd()}/build/test/AlgLogTest")
 router.add(build, "build {Debug | Release}")
 
 def clean():
