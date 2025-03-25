@@ -25,8 +25,8 @@ jobs:
 
     - name: Run Test (Windows)
       if: runner.os == 'Windows'
-      run: ./build/test/Release/AlgLogTest.exe
+      run: ${{github.workspace}}\build\test\Release\AlgLogTest.exe
 
     - name: Run Test (Unix)
       if: runner.os != 'Windows'
-      run: ./build/test/AlgLogTest
+      run: ${{github.workspace}}/build/test/AlgLogTest
