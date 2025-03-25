@@ -8,25 +8,27 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }}-build
+    name: ${{ matrix.os }}-${{ matrix.build_type }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
+        build_type: [Debug, Release]
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Configure CMake
-      run: cmake -B build -DALGLOG_BUILD_TESTS=ON
+      run: cmake -B build -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} -DALGLOG_BUILD_TESTS=ON
 
     - name: Build
-      run: cmake --build build --config Release
+      run: cmake --build build --config ${{ matrix.build_type }}
 
     - name: Run Test (Windows)
       if: runner.os == 'Windows'
-      run: ${{github.workspace}}\build\test\Release\AlgLogTest.exe
+      run: .\build\test\${{ matrix.build_type }}\AlgLogTest.exe
 
     - name: Run Test (Unix)
       if: runner.os != 'Windows'
-      run: ${{github.workspace}}/build/test/AlgLogTest
+      run: ./build/test/AlgLogTest
