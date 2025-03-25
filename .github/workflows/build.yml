@@ -35,14 +35,14 @@ jobs:
 
     - name: Run Test (Windows)
       if: runner.os == 'Windows'
-      run: .\build\test\${{ matrix.build_type }}\AlgLogTest.exe
+      run: .\build\test\${{ matrix.build_type }}\AlglogTest.exe
 
     - name: Run Test (Linux)
       if: runner.os == 'Linux'
-      run: ./build/test/AlgLogTest
+      run: ./build/test/AlglogTest
 
     - name: Run Test (macOS)
       if: runner.os == 'macOS'
-      run: ./build/test/AlgLogTest
+      run: ./build/test/AlglogTest
 
 
