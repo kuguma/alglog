@@ -3,6 +3,15 @@
 #define ALGLOG_DIRECT_INCLUDE_GUARD
 #include <alglog.h>
 
+/*
+    alglogでは、複数プロジェクトで採用された場合の設定の衝突を避けるため、
+    グローバルロガーを配置しない代わりに、プロジェクトごとにロガーを作成することを推奨しています。
+    このファイルをベースにプロジェクトロガーを作成し、alglog.hの代わりにそれをincludeするようにしてください。
+    - my_project
+    - MyLog
+    をプロジェクトに合うように一括置換してください。
+*/
+
 namespace my_project{
 
     class Logger {

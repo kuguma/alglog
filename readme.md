@@ -8,11 +8,11 @@ alglogは、中規模のC++商用プロジェクトをターゲットとした�
 
 ```cmake
 FetchContent_Declare(
-    ALGLOG
+    alglog
     GIT_REPOSITORY https://github.com/kuguma/alglog.git
     GIT_TAG     <version_tag>
 )
-FetchContent_MakeAvailable(ALGLOG)
+FetchContent_MakeAvailable(alglog)
 ```
 
 ## Features
@@ -147,7 +147,7 @@ include前にこれらのキーワードを定義するか、コンパイラに�
 
 alglogでは、`alglog.h`をラップしたヘッダ（プロジェクトロガーヘッダ）を作成し、マクロ経由で呼び出してもらうことを想定しています。
 
-`alglog-project-logger-template.h`を参照してください。
+詳細は`alglog-project-logger-template.h`を参照してください。
 
 ```C++
 
@@ -247,10 +247,19 @@ C++でロガーライブラリを構築する場合、以下のような制約�
 
 ### 複数プロジェクトでの運用
 
-同じロギングライブラリが複数プロジェクトで使用される場合、最も問題なのは衝突です。
+同じロギングライブラリが複数プロジェクトで使用される場合、よく問題になるのは設定の衝突です。
 
 あらゆるプロジェクトが、自分の都合の良いようにライブラリを使おうとすることを想定する必要があります。2つのプロジェクトが、お互いに自分だけの出力を有効化するように設定を行っていたらどうなるでしょうか？
 
 このような問題を避けるため、alglogではグローバルロガーを実装していません。
 
-グローバル化はユーザーがそれぞれの責任で作成します。（namespaceの利用を強く推奨します）
+グローバル化はユーザーがそれぞれの責任で行います。（namespaceの利用を強く推奨します）
+
+## Test
+
+```shell
+$ cd alglog
+$ python test/main.py
+```
+
+テストの拡充を歓迎します！
