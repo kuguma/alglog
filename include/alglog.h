@@ -90,7 +90,7 @@
 // スレッドIDを取得する。もしくは機能を利用しない。
 #ifdef ALGLOG_GETTID_OFF
     inline std::thread::id get_thread_id(){
-        return std::thread::id(0);
+        return std::thread::id();
     }
 #else
     inline std::thread::id get_thread_id(){
