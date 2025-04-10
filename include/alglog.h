@@ -191,36 +191,7 @@ struct log_t{
 
 // Core
 
-#ifdef ALGLOG_USE_ARRAY_CONTAINER // 試験的な機能。デフォルトはオフ
-    template <class T, int N>
-    struct veclike_array{
-        std::array<T,N> arr;
-        long long cnt = 0;
-
-        void push_back(T& val){
-            arr.at(cnt) = val;
-            ++cnt;
         }
-        void clear() {
-            cnt = 0;
-        }
-        long long size() const {
-            return cnt;
-        }
-        bool is_full() const {
-            return cnt == N-1;
-        }
-        const T* begin() const {
-            return &arr[0];
-        }
-        const T* end() const {
-            return &arr[cnt];
-        }
-    };
-    using log_container_t = std::veclike_array<log_t. 4096>;
-#else
-    using log_container_t = std::list<log_t>;
-#endif
 
 
 struct sink{
@@ -288,11 +259,6 @@ public:
         }else{
             std::lock_guard<std::mutex> lock(logs_mtx);
             logs.push_back(log);
-            #ifdef ALGLOG_USE_ARRAY_CONTAINER
-                if (logs.is_full()){
-                    flush_no_lock();
-                }
-            #endif
         }
     }
 
