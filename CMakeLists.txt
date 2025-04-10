@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(alglog
-    VERSION 0.4.0
+    VERSION 0.4.1
     DESCRIPTION "A single header logging library for comerical use project"
     HOMEPAGE_URL "https://github.com/kuguma/alglog"
     LANGUAGES CXX
@@ -12,8 +12,7 @@ option(ALGLOG_DEFAULT_LOG_SWITCH "Enable default log switch" ON) # デフォル�
 option(ALGLOG_GETPID "Enable process ID retrieval" ON)
 option(ALGLOG_GETTID "Enable thread ID retrieval" ON)
 option(ALGLOG_AUTO_THREAD_PRIORITY "Enable automatic thread priority adjustment for flusher thread" ON)
-option(ALGLOG_CONTAINER_STD_LIST "Use container of std::list with std::mutex" OFF)
-option(ALGLOG_CONTAINER_MPSC_RINGBUFFER "Use container of mpsc ring buffer" ON)
+option(ALGLOG_CONTAINER_MPSC_RINGBUFFER "Use container of mpsc ring buffer" OFF) # デフォルトはmutexつきのstd::listが使われる。
 
 add_library(alglog INTERFACE)
 add_library(alglog::alglog ALIAS alglog)
@@ -44,6 +43,5 @@ target_compile_definitions(alglog INTERFACE
     $<$<BOOL:${ALGLOG_GETPID}>:ALGLOG_GETPID>
     $<$<BOOL:${ALGLOG_GETTID}>:ALGLOG_GETTID>
     $<$<BOOL:${ALGLOG_AUTO_THREAD_PRIORITY}>:ALGLOG_AUTO_THREAD_PRIORITY>
-    $<$<BOOL:${ALGLOG_CONTAINER_STD_LIST}>:ALGLOG_CONTAINER_STD_LIST>
     $<$<BOOL:${ALGLOG_CONTAINER_MPSC_RINGBUFFER}>:ALGLOG_CONTAINER_MPSC_RINGBUFFER>
 )

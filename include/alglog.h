@@ -273,13 +273,7 @@ public:
     }
 };
 
-#if defined(ALGLOG_CONTAINER_STD_LIST) && defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
-    #error "ALGLOG_CONTAINER_STD_LIST and ALGLOG_CONTAINER_MPSC_RINGBUFFER are mutually exclusive. Please define only one."
-#endif
-
-#if defined(ALGLOG_CONTAINER_STD_LIST)
-    using log_container_t = log_container_std_list;
-#elif defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
+#if defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
     #if defined (ALGLOG_MPSC_RINGBUFFER_SIZE)
         using log_container_t = log_container_mpsc<ALGLOG_MPSC_RINGBUFFER_SIZE>;
     #else
