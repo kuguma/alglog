@@ -105,6 +105,28 @@
     }
 #endif
 
+// flusher thread の優先度を自動設定する。
+#if defined(ALGLOG_AUTO_THREAD_PRIORITY_ON) && (defined(_WIN32) || defined(_WIN64))
+    #include <windows.h> // Required for SetThreadPriority
+    inline void set_thread_priority_lowest(){
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+    }
+#elif defined(ALGLOG_AUTO_THREAD_PRIORITY_ON)
+    #include <pthread.h> // Required for pthread functions
+    #include <sched.h>   // Required for sched functions
+    inline void set_thread_priority_lowest(){
+        sched_param sch;
+        int policy;
+        pthread_getschedparam(pthread_self(), &policy, &sch);
+        sch.sched_priority = sched_get_priority_min(policy);
+        pthread_setschedparam(pthread_self(), policy, &sch);
+    }
+#else
+    inline void set_thread_priority_lowest(){
+        // do nothing
+    }
+#endif
+
 // ファイル名のベースネームを取得する。
 // 新しいgcc, clangでは__FILE_NAME__が使える。
 // 使えない場合は再帰テンプレートによりベースネームを抽出する。
@@ -452,7 +474,6 @@ public:
 
     // intervalミリ秒ごとにloggerをフラッシュする。
     // intervalを短くしすぎるとメインプログラムの挙動に影響が出る可能性がある。
-    // TODO スレッド優先度を最低にする
     void start(int interval_ms = 500){
         auto interval = std::chrono::milliseconds(interval_ms);
         flusher_thread_run = true;
@@ -462,6 +483,8 @@ public:
                     l->raw_store(level::debug, "[alglog] start periodic flashing");
                 }
             #endif
+            set_thread_priority_lowest();
+
             while(flusher_thread_run){
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
                 if (auto l = lgr.lock()){
