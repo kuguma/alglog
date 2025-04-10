@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.15)
 
 project(alglog
-    VERSION 0.3.0
+    VERSION 0.4.0
     DESCRIPTION "A single header logging library for comerical use project"
     HOMEPAGE_URL "https://github.com/kuguma/alglog"
     LANGUAGES CXX
