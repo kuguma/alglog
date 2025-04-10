@@ -191,15 +191,57 @@ struct log_t{
 
 // Core
 
+// alglogで用いるログコンテナのインターフェース。
+// 任意の実装を利用可能だが、スレッドセーフ or ロックフリーの実装を推奨する。
+class log_container_interface{
+public:
+    // ログを追加する。追加に成功したらtrueを返す。
+    // ブロック不可。
+    virtual bool push(const log_t&) = 0;
+
+    // ログを取り出す。取り出しに成功したらtrueを返す。
+    // ブロック不可。
+    virtual bool pop(log_t&) = 0;
+};
+
+
+// std::listとmtxを使った簡易スレッドセーフ実装。
+class log_container_std_list : public log_container_interface{
+private:
+    std::list<log_t> c;
+    mutable std::mutex mtx;
+public:
+    bool push(const log_t& l) override {
+        std::lock_guard<std::mutex> lock(mtx);
+        c.push_back(l);
+        return true;
+    }
+    bool pop(log_t& l) override {
+        std::lock_guard<std::mutex> lock(mtx);
+        if (c.empty()){
+            return false;
         }
+        l = c.front();
+        c.pop_front();
+        return true;
+    }
+};
+
+
+using log_container_t = log_container_std_list;
 
 
 struct sink{
     std::function<bool(const log_t&)> valve = nullptr; // データを出力するかを判断する関数
     std::function<std::string(const log_t&)> formatter = nullptr; // sinkはformatterを持ち、出力の際に利用する。
     virtual void output(const log_t&) = 0; // ログ出力のタイミングで接続されているloggerからこのoutputが呼び出される。
-    void _cond_output(const log_container_t& logs){
-        for(const auto& l : logs){
+    void _cond_output(log_container_t& logs){
+        while(true){
+            log_t l;
+            auto ret = logs.pop(l);
+            if (!ret){
+                break;
+            }
             if (valve(l)){
                 output(l);
             }
@@ -212,7 +254,6 @@ class logger{
 private:
     log_container_t logs;
     std::vector<std::shared_ptr<sink>> sinks; // loggerは自分が持っているsink全てに入力されたlogを受け渡す。
-    std::mutex logs_mtx;
     std::mutex sinks_mtx;
 public:
     const bool async_mode;
@@ -228,15 +269,9 @@ public:
 
     // 保管されているログを出力する。
     void flush(){
-        std::lock_guard<std::mutex> lock(logs_mtx);
-        flush_no_lock();
-    }
-
-    void flush_no_lock(){
         for(auto& s : sinks){
             s->_cond_output(logs);
         }
-        logs.clear();
     }
 
     // ------------------------------------
@@ -253,12 +288,9 @@ public:
             get_thread_id(),
             loc
         };
+        logs.push(log);
         if (!async_mode){
-            logs.push_back(log);
-            flush_no_lock();
-        }else{
-            std::lock_guard<std::mutex> lock(logs_mtx);
-            logs.push_back(log);
+            flush();
         }
     }
 
