@@ -33,7 +33,7 @@ FetchContent_MakeAvailable(alglog)
 - 顧客に公開したいログ（例えばverboseモードでの出力）と、デバッグ用のログを1つのライブラリでサポートできます。
 - 顧客ログには、ソース情報は含まれません。
 - デバッグログはマクロを経由して呼び出すことで、ソース情報を含めることができます。ログ呼び出しはリリースビルドでは消滅します。
-- もちろん、`ALGLOG_ALL_OFF`ですべてを無効化することもできます。
+- `ALGLOG_DEFAULT_LOG_SWITCH`をOFFに設定して、自分でカスタムすることもできます。
 
 #### 速度を重視するプロジェクトのために、非同期ロギングをサポートしています。
 
@@ -44,7 +44,7 @@ FetchContent_MakeAvailable(alglog)
 
 - boostやfmtlibと同様に、バイナリ配布の場合は権利表記が必要ありません。
 - プロジェクトのローンチ後でも、導入に際して顧客説明が必要なく、上司への説明が簡単です。これは開発者にとって嬉しい点です。
-- 柔軟にOSSを採用できるプロジェクトでは、メンテナンスされており、より洗練されたロガー（例えば`spdlog`や`quill`など ）の採用を推奨します。
+- もちろん、柔軟にOSSを採用できるプロジェクトでは、メンテナンスされており、より洗練されたロガー（例えば`spdlog`や`quill`など ）の採用を推奨します。
 
 #### グローバルロガーを採用していません。
 
@@ -114,23 +114,31 @@ enum class level{
 
 ## コンパイラスイッチ
 
-include前にこれらのキーワードを定義するか、コンパイラに引数として与えることで、ログ出力がバイナリに含まれるかを制御できます。
-デフォルト挙動では、`alglog`はすべてのレベルのログを出力します。
+alglogの全てのマクロは正論理です。殆どの機能は、マクロを用いて明示的に有効化する必要があります。
+例えば、`ALGLOG_<LOG_LEVEL>_ON`を`define`すると、該当するログレベルのログ出力が有効になります。
 
-```C++
-#define ALGLOG_ALL_OFF // すべてのログ出力を無効化する。
-#define ALGLOG_<LOG_LEVEL>_OFF // <LOG_LEVEL>出力を無効化する。
-#define NDEBUG // (cmakeのReleaseビルド標準）error, alert, info出力以外を無効化する。
+通常、これらのマクロの宣言はcmakeにより自動的に行われます。
+alglogをcmakeのプロジェクトとして追加せず、ヘッダのコピーを直接プロジェクトに配置する方法でこのライブラリを使用する場合は、適宜必要なマクロを`define`してください。
+マクロの名前は、cmakeのoptionの名前と同じです。
 
-#define ALGLOG_GETPID_OFF // プロセスIDを取得しない。
-#define ALGLOG_GETTID_OFF // スレッドIDを取得しない。
+```cmake
+option(ALGLOG_DEFAULT_LOG_SWITCH "Enable default log switch" ON) # デフォルトではリリースでERROR,ALERT,INFOが残る
+option(ALGLOG_GETPID "Enable process ID retrieval" ON)
+option(ALGLOG_GETTID "Enable thread ID retrieval" ON)
+option(ALGLOG_AUTO_THREAD_PRIORITY "Enable automatic thread priority adjustment for flusher thread" ON)
+option(ALGLOG_CONTAINER_STD_LIST "Use container of std::list with std::mutex" OFF)
+option(ALGLOG_CONTAINER_MPSC_RINGBUFFER "Use container of mpsc ring buffer" ON)
 ```
 
 ## How to use / Q & A
 
 ### とにかくすぐロガーが使いたい（非推奨）
 
+とりあえず動作確認がしたい場合は、以下のスニペットを利用できます。
+製品コードではプロジェクトロガーを利用するようにしてください。
+
 ```C++
+    #define ALGLOG_DIRECT_INCLUDE_GUARD // このマクロを宣言しないで直接includeした場合、エラーになります。
     #include <alglog.h>
 
     auto logger = alglog::builtin::get_default_logger();
