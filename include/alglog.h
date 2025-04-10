@@ -481,6 +481,11 @@ namespace builtin{
         void output(const log_t& l) override {
             (*ofs.get()) << formatter(l) << std::endl;
         }
+        virtual ~file_sink() {
+            if (ofs){
+                ofs->flush();
+            }
+        }
     };
 
     struct print_sink : public sink{
