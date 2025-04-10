@@ -615,8 +615,8 @@ class time_counter{
 private:
     std::weak_ptr<logger> lgr;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
-    level lvl;
     std::string title;
+    level lvl;
 
 public:
     time_counter(std::shared_ptr<logger> logger_weak_ptr, const std::string& title, level lvl = level::debug) : lgr(logger_weak_ptr), title(title), lvl(lvl) {
