@@ -562,7 +562,7 @@ private:
     std::string title;
 
 public:
-    time_counter(std::shared_ptr<logger> logger_weak_ptr, const std::string& title, level lvl = level::debug) : lgr(logger_weak_ptr), lvl(lvl), title(title) {
+    time_counter(std::shared_ptr<logger> logger_weak_ptr, const std::string& title, level lvl = level::debug) : lgr(logger_weak_ptr), title(title), lvl(lvl) {
         if(auto l = lgr.lock()){
             l->fmt_store(lvl, "[{}] start time count", title);
         }
