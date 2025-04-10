@@ -75,12 +75,12 @@
 
 
 // システムコールでプロセスIDを取得する。もしくは機能を利用しない。
-#if defined(ALGLOG_GETPID_ON) && (defined(_WIN32) || defined(_WIN64))
+#if defined(ALGLOG_GETPID) && (defined(_WIN32) || defined(_WIN64))
     #include <windows.h>
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(GetCurrentProcessId());
     }
-#elif defined(ALGLOG_GETPID_ON)
+#elif defined(ALGLOG_GETPID)
     #include <sys/types.h>
     #include <unistd.h>
     #include <sys/types.h>
@@ -95,7 +95,7 @@
 #endif
 
 // スレッドIDを取得する。もしくは機能を利用しない。
-#ifdef ALGLOG_GETTID_ON
+#ifdef ALGLOG_GETTID
     inline std::thread::id get_thread_id(){
         return std::this_thread::get_id();
     }
@@ -106,12 +106,12 @@
 #endif
 
 // flusher thread の優先度を自動設定する。
-#if defined(ALGLOG_AUTO_THREAD_PRIORITY_ON) && (defined(_WIN32) || defined(_WIN64))
+#if defined(ALGLOG_AUTO_THREAD_PRIORITY) && (defined(_WIN32) || defined(_WIN64))
     #include <windows.h> // Required for SetThreadPriority
     inline void set_thread_priority_lowest(){
         SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
     }
-#elif defined(ALGLOG_AUTO_THREAD_PRIORITY_ON)
+#elif defined(ALGLOG_AUTO_THREAD_PRIORITY)
     #include <pthread.h> // Required for pthread functions
     #include <sched.h>   // Required for sched functions
     inline void set_thread_priority_lowest(){

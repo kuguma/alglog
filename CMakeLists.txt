@@ -8,9 +8,9 @@ project(alglog
 )
 
 option(ALGLOG_BUILD_TESTS "Build the test programs" OFF)
-option(ALGLOG_GETPID_ON "Enable process ID retrieval" ON)
-option(ALGLOG_GETTID_ON "Enable thread ID retrieval" ON)
-option(ALGLOG_AUTO_THREAD_PRIORITY_ON "Enable automatic thread priority adjustment for flusher thread" ON)
+option(ALGLOG_GETPID "Enable process ID retrieval" ON)
+option(ALGLOG_GETTID "Enable thread ID retrieval" ON)
+option(ALGLOG_AUTO_THREAD_PRIORITY "Enable automatic thread priority adjustment for flusher thread" ON)
 
 add_library(alglog INTERFACE)
 add_library(alglog::alglog ALIAS alglog)
@@ -37,7 +37,7 @@ if (ALGLOG_BUILD_TESTS)
 endif()
 
 target_compile_definitions(alglog INTERFACE
-    $<$<BOOL:${ALGLOG_GETPID_ON}>:ALGLOG_GETPID_ON>
-    $<$<BOOL:${ALGLOG_GETTID_ON}>:ALGLOG_GETTID_ON>
-    $<$<BOOL:${ALGLOG_AUTO_THREAD_PRIORITY_ON}>:ALGLOG_AUTO_THREAD_PRIORITY_ON>
+    $<$<BOOL:${ALGLOG_GETPID}>:ALGLOG_GETPID>
+    $<$<BOOL:${ALGLOG_GETTID}>:ALGLOG_GETTID>
+    $<$<BOOL:${ALGLOG_AUTO_THREAD_PRIORITY}>:ALGLOG_AUTO_THREAD_PRIORITY>
 )
