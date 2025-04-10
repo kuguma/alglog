@@ -12,6 +12,8 @@
     をプロジェクトに合うように一括置換してください。
 */
 
+#ifndef ALGLOG_PURGE
+
 namespace my_project{
 
     class Logger {
@@ -51,3 +53,18 @@ namespace my_project{
 
 #define MyTimeCount(title) alglog::time_counter _tc(teleaudio::Logger::get().logger, title)
 #define MyTimeCountLevel(title, level) alglog::time_counter _tc(teleaudio::Logger::get().logger, title, level)
+
+#else
+
+#define MyLogError(...) ((void)0)
+#define MyLogAlert(...) ((void)0)
+#define MyLogInfo(...) ((void)0)
+#define MyLogCritical(...) ((void)0)
+#define MyLogWarn(...) ((void)0)
+#define MyLogDebug(...) ((void)0)
+#define MyLogTrace(...) ((void)0)
+
+#define MyTimeCount(title) ((void)0)
+#define MyTimeCountLevel(title, level) ((void)0)
+
+#endif
