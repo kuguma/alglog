@@ -235,16 +235,9 @@ struct sink{
     std::function<bool(const log_t&)> valve = nullptr; // データを出力するかを判断する関数
     std::function<std::string(const log_t&)> formatter = nullptr; // sinkはformatterを持ち、出力の際に利用する。
     virtual void output(const log_t&) = 0; // ログ出力のタイミングで接続されているloggerからこのoutputが呼び出される。
-    void _cond_output(log_container_t& logs){
-        while(true){
-            log_t l;
-            auto ret = logs.pop(l);
-            if (!ret){
-                break;
-            }
-            if (valve(l)){
-                output(l);
-            }
+    void _cond_output(log_t& l){
+        if (valve(l)){
+            output(l);
         }
     }
     virtual ~sink(){}
@@ -269,8 +262,15 @@ public:
 
     // 保管されているログを出力する。
     void flush(){
-        for(auto& s : sinks){
-            s->_cond_output(logs);
+        while(true){
+            log_t l;
+            auto ret = logs.pop(l);
+            if (!ret){
+                break;
+            }
+            for(auto& s : sinks){
+                s->_cond_output(l);
+            }
         }
     }
 
