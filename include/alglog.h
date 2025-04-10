@@ -305,12 +305,51 @@ public:
 
     template <class ... T>
     void fmt_store(source_location loc, const level lvl, fmt::format_string<T...> fmt, T&&... args){
-        raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+        // TODO : C++17以降であればconstexpr ifを使える
+        switch(lvl){
+            case level::error:
+                #ifdef ALGLOG_ERROR_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::alert:
+                #ifdef ALGLOG_ALERT_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::info:
+                #ifdef ALGLOG_INFO_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::critical:
+                #ifdef ALGLOG_CRITICAL_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::warn:
+                #ifdef ALGLOG_WARN_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::debug:
+                #ifdef ALGLOG_DEBUG_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::trace:
+                #ifdef ALGLOG_TRACE_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            default:
+                break;
+        }
     }
 
     template <class ... T>
     void fmt_store(const level lvl, fmt::format_string<T...> fmt, T&&... args){
-        raw_store(lvl, fmt::format(fmt, std::forward<T>(args)...));
+        fmt_store(source_location{}, lvl, fmt, std::forward<T>(args)...);
     }
 
     // ----------------------------------------------
@@ -389,13 +428,6 @@ public:
         #endif
     }
 };
-
-
-// #ifndef ALGLOG_INTERNAL_OFF
-//     #define ALGLOG_INTERNAL_STORE(...) lgr->raw_store(level::debug, __VA_ARGS__)
-// #else
-//     #define ALGLOG_INTERNAL_STORE(...) ((void)0)
-// #endif
 
 // 定期的にロガーをフラッシュしたい場合に使えるヘルパークラス
 class flusher{
