@@ -29,24 +29,66 @@ int main(){
     MyLogTrace("vector =  {}", vec);
 
     // mt test
-    std::vector<std::shared_ptr<std::thread>> t_vec;
-    for (int j=0; j<10; ++j){
-        auto th = std::make_shared<std::thread>(
-            [&](int tnum){
-                std::mt19937 mt;
-                std::random_device rnd;
-                mt.seed(rnd());
-                for(int i=0; i<10; ++i){
-                    MyLogTrace("[ thread {} ] val = {}", tnum, i);
-                    std::this_thread::sleep_for(std::chrono::milliseconds(mt() % 10));
-                }
-            }, j
-        );
-        t_vec.push_back( th );
+    {
+        std::vector<std::shared_ptr<std::thread>> t_vec;
+        for (int j=0; j<10; ++j){
+            auto th = std::make_shared<std::thread>(
+                [&](int tnum){
+                    std::mt19937 mt;
+                    std::random_device rnd;
+                    mt.seed(rnd());
+                    for(int i=0; i<10; ++i){
+                        MyLogTrace("[ thread {} ] val = {}", tnum, i);
+                        std::this_thread::sleep_for(std::chrono::milliseconds(mt() % 10));
+                    }
+                }, j
+            );
+            t_vec.push_back( th );
+        }
+        for (size_t j=0; j<t_vec.size(); ++j){
+            t_vec[j]->join();
+        }
     }
-    for (size_t j=0; j<t_vec.size(); ++j){
-        t_vec[j]->join();
+
+    // mt stress test
+    {
+        int num_threads = 10;
+        int num_iterations = 1000;
+        std::vector<std::shared_ptr<std::thread>> t_vec;
+        std::atomic<int> error_count{0};
+
+        for (int j=0; j<num_threads; ++j){
+            auto th = std::make_shared<std::thread>(
+                [&](int tnum){
+                    std::mt19937 mt;
+                    std::random_device rnd;
+                    mt.seed(rnd());
+                    for(int i=0; i<num_iterations; ++i){
+                        auto start = std::chrono::high_resolution_clock::now();
+                        MyLogInfo("[ thread {} ] stress val = {}", tnum, i);
+                        auto end = std::chrono::high_resolution_clock::now();
+                        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+                        if (duration.count() > 100) {
+                            MyLogError("[ thread {} ] Write time exceeded 100us: {}us", tnum, duration.count());
+                            error_count++;
+                        }
+                        std::this_thread::sleep_for(std::chrono::microseconds(mt() % 50));
+                    }
+                }, j
+            );
+            t_vec.push_back( th );
+        }
+        for (size_t j=0; j<t_vec.size(); ++j){
+            t_vec[j]->join();
+        }
+        if (error_count > 0) {
+            MyLogInfo("MT stress test failed with {} errors({} %)", error_count, (100.0 * error_count / (num_threads * num_iterations)));
+        } else {
+            MyLogInfo("MT stress test passed.");
+        }
     }
+
 
     // multi include test
     call_from_another_source(39);
@@ -102,6 +144,8 @@ int main(){
         }
         print_last_line("time_count_async_flush.log");
     }
+
+
 
     // // error test
     // {
