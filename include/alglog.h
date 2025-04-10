@@ -258,9 +258,10 @@ public:
 };
 
 // multi producer single consumer ring buffer
+template <size_t N>
 class log_container_mpsc : public log_container_interface{
     private:
-        mpsc_ring_buffer<log_t, 4096> c;
+        mpsc_ring_buffer<log_t, N> c;
     public:
         bool push(const log_t& l) override {
             return c.push(l);
@@ -272,7 +273,7 @@ class log_container_mpsc : public log_container_interface{
 
 
 // using log_container_t = log_container_std_list;
-using log_container_t = log_container_mpsc;
+using log_container_t = log_container_mpsc<1024 * 16>;
 
 
 struct sink{
