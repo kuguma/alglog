@@ -27,6 +27,7 @@
 #include <atomic>
 #include <mutex>
 #include <cassert>
+#include "mpsc_ring_buffer.h"
 
 
 /* ----------------------------------------------------------------------------
@@ -217,8 +218,7 @@ struct log_t{
 
 
 // ------------------------------------
-
-// Core
+// Log収集用コンテナ
 
 // alglogで用いるログコンテナのインターフェース。
 // 任意の実装を利用可能だが、スレッドセーフ or ロックフリーの実装を推奨する。
@@ -235,6 +235,7 @@ public:
 
 
 // std::listとmtxを使った簡易スレッドセーフ実装。
+// ほぼ無限に書き込めるが、ロックが長く低速。
 class log_container_std_list : public log_container_interface{
 private:
     std::list<log_t> c;
@@ -256,9 +257,41 @@ public:
     }
 };
 
+// multi producer / single consumer のリングバッファ。
+// 容量に制限があり、内容量に関わらずメモリを消費する。
+// 制限を超える分は書込みに失敗するが、ロックフリーで比較的高速。
+template <size_t N>
+class log_container_mpsc : public log_container_interface{
+private:
+    mpsc_ring_buffer<log_t, N> c;
+public:
+    bool push(const log_t& l) override {
+        return c.push(l);
+    }
+    bool pop(log_t& l) override {
+        return c.pop(l);
+    }
+};
 
-using log_container_t = log_container_std_list;
+#if defined(ALGLOG_CONTAINER_STD_LIST) && defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
+    #error "ALGLOG_CONTAINER_STD_LIST and ALGLOG_CONTAINER_MPSC_RINGBUFFER are mutually exclusive. Please define only one."
+#endif
 
+#if defined(ALGLOG_CONTAINER_STD_LIST)
+    using log_container_t = log_container_std_list;
+#elif defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
+    #if defined (ALGLOG_MPSC_RINGBUFFER_SIZE)
+        using log_container_t = log_container_mpsc<ALGLOG_MPSC_RINGBUFFER_SIZE>;
+    #else
+        using log_container_t = log_container_mpsc<1024 * 16>;
+    #endif
+#else
+    // default
+    using log_container_t = log_container_std_list;
+#endif
+
+// ------------------------------------
+// Core
 
 struct sink{
     std::function<bool(const log_t&)> valve = nullptr; // データを出力するかを判断する関数
