@@ -27,6 +27,7 @@
 #include <atomic>
 #include <mutex>
 #include <cassert>
+#include "mpsc_ring_buffer.h"
 
 
 /* ----------------------------------------------------------------------------
@@ -256,8 +257,22 @@ public:
     }
 };
 
+// multi producer single consumer ring buffer
+class log_container_mpsc : public log_container_interface{
+    private:
+        mpsc_ring_buffer<log_t, 4096> c;
+    public:
+        bool push(const log_t& l) override {
+            return c.push(l);
+        }
+        bool pop(log_t& l) override {
+            return c.pop(l);
+        }
+};
 
-using log_container_t = log_container_std_list;
+
+// using log_container_t = log_container_std_list;
+using log_container_t = log_container_mpsc;
 
 
 struct sink{
