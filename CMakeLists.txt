@@ -21,11 +21,11 @@ find_package(Threads REQUIRED)
 
 Include(FetchContent)
 FetchContent_Declare(
-    FMT
+    fmt
     GIT_REPOSITORY https://github.com/fmtlib/fmt.git
     GIT_TAG     10.1.1
 )
-FetchContent_MakeAvailable(FMT)
+FetchContent_MakeAvailable(fmt)
 
 target_link_libraries(alglog INTERFACE fmt::fmt)
 

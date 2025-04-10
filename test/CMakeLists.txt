@@ -19,7 +19,7 @@ target_compile_options(AlglogTest PRIVATE
 
 target_include_directories(AlglogTest PUBLIC
     "../include"
-    ${FMT_SOURCE_DIR}/include # FetchContentでXXXを取得すると、XXX_SOURCE_DIRでソースディレクトリのパスが取れる
+    ${fmt_SOURCE_DIR}/include # FetchContentでXXXを取得すると、xxx_SOURCE_DIRでソースディレクトリのパスが取れる
 )
 
 target_link_libraries(AlglogTest PRIVATE

@@ -53,35 +53,54 @@ int main(){
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
+
+
     // speed test
     {
-        auto l_sync = std::make_shared<alglog::logger>();
-        l_sync->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_sync.log") );
+        auto print_last_line = [](const std::string& filename){
+            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::ifstream file(filename);
+            std::string last_line;
+            std::string line;
+            while (std::getline(file, line)) {
+                last_line = line;
+            }
+            std::cout << last_line << std::endl;
+        };
+
+
         {
+            auto l_sync = std::make_shared<alglog::logger>();
+            l_sync->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_sync.log") );
             auto t = alglog::time_counter(l_sync, "sync mode");
             for(int i=0; i<100000; ++i){
                 l_sync->trace("log #{} {} {}", i,i,i);
             }
         }
-        auto l_async = std::make_shared<alglog::logger>(true);
-        l_async->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async.log") );
+        print_last_line("time_count_sync.log");
+
         {
+            auto l_async = std::make_shared<alglog::logger>(true);
+            l_async->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async.log") );
             auto t = alglog::time_counter(l_async, "async mode");
             for(int i=0; i<100000; ++i){
                 l_async->trace("log #{} {} {}", i,i,i);
             }
             l_async->flush();
         }
-        auto l_async_flush = std::make_shared<alglog::logger>(true);
-        l_async_flush->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async_flush.log") );
+        print_last_line("time_count_async.log");
+
         {
+            auto l_async_flush = std::make_shared<alglog::logger>(true);
+            l_async_flush->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async_flush.log") );
             auto f = std::make_unique<alglog::flusher>(l_async_flush);
             f->start(500);
-            auto t = alglog::time_counter(l_async_flush, "async mode (flush)");
+            auto t = alglog::time_counter(l_async_flush, "async mode (500ms timer flush)");
             for(int i=0; i<100000; ++i){
                 l_async_flush->trace("log #{} {} {}", i,i,i);
             }
         }
+        print_last_line("time_count_async_flush.log");
     }
 
     // // error test

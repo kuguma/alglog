@@ -81,7 +81,18 @@
 			"xtr1common": "cpp",
 			"xtree": "cpp",
 			"xutility": "cpp",
-			"random": "cpp"
+			"random": "cpp",
+			"bitset": "cpp",
+			"condition_variable": "cpp",
+			"coroutine": "cpp",
+			"csignal": "cpp",
+			"deque": "cpp",
+			"filesystem": "cpp",
+			"future": "cpp",
+			"queue": "cpp",
+			"stack": "cpp",
+			"unordered_set": "cpp",
+			"resumable": "cpp"
 		}
 	}
 }
