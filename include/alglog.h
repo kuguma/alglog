@@ -47,37 +47,40 @@
 
 // compile switch -------------------------------------------------
 
-// デフォルト動作では、ERROR, ALERT, INFOのみがリリースビルドで残る。
-#ifdef ALGLOG_ALL_OFF
-    #define ALGLOG_ERROR_OFF
-    #define ALGLOG_ALERT_OFF
-    #define ALGLOG_INFO_OFF
-    #define ALGLOG_CRITICAL_OFF
-    #define ALGLOG_WARN_OFF
-    #define ALGLOG_DEBUG_OFF
-    #define ALGLOG_TRACE_OFF
-    #define ALGLOG_INTERNAL_OFF
-#elif defined(ALGLOG_ALL_ON)
-    // pass
-#elif defined(NDEBUG) || ( defined(_MSC_VER) && (!defined(_DEBUG)) )
-    #define ALGLOG_CRITICAL_OFF
-    #define ALGLOG_WARN_OFF
-    #define ALGLOG_DEBUG_OFF
-    #define ALGLOG_TRACE_OFF
-    #define ALGLOG_INTERNAL_OFF
+#if defined(NDEBUG) || ( defined(_MSC_VER) && (!defined(_DEBUG)) )
+    #define ALGLOG_RELEASE_BUILD
+#else
+    #define ALGLOG_DEBUG_BUILD
 #endif
 
+
+#ifndef ALGLOG_DEFAULT_LOG_SWITCH
+#ifdef ALGLOG_RELEASE_BUILD
+    #define ALGLOG_ERROR_ON
+    #define ALGLOG_ALERT_ON
+    #define ALGLOG_INFO_ON
+#endif
+
+#ifdef ALGLOG_DEBUG_BUILD
+    #define ALGLOG_ERROR_ON
+    #define ALGLOG_ALERT_ON
+    #define ALGLOG_INFO_ON
+    #define ALGLOG_CRITICAL_ON
+    #define ALGLOG_WARN_ON
+    #define ALGLOG_DEBUG_ON
+    #define ALGLOG_TRACE_ON
+    #define ALGLOG_INTERNAL_ON
+#endif
+#endif
+
+
 // システムコールでプロセスIDを取得する。もしくは機能を利用しない。
-#ifdef ALGLOG_GETPID_OFF
-    inline uint32_t get_process_id(){
-        return 0;
-    }
-#elif defined(_WIN32) || defined(_WIN64)
+#if defined(ALGLOG_GETPID) && (defined(_WIN32) || defined(_WIN64))
     #include <windows.h>
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(GetCurrentProcessId());
     }
-#else
+#elif defined(ALGLOG_GETPID)
     #include <sys/types.h>
     #include <unistd.h>
     #include <sys/types.h>
@@ -85,16 +88,42 @@
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(getpid());
     }
+#else
+    inline uint32_t get_process_id(){
+        return 0;
+    }
 #endif
 
 // スレッドIDを取得する。もしくは機能を利用しない。
-#ifdef ALGLOG_GETTID_OFF
+#ifdef ALGLOG_GETTID
     inline std::thread::id get_thread_id(){
-        return std::thread::id();
+        return std::this_thread::get_id();
     }
 #else
     inline std::thread::id get_thread_id(){
-        return std::this_thread::get_id();
+        return std::thread::id();
+    }
+#endif
+
+// flusher thread の優先度を自動設定する。
+#if defined(ALGLOG_AUTO_THREAD_PRIORITY) && (defined(_WIN32) || defined(_WIN64))
+    #include <windows.h> // Required for SetThreadPriority
+    inline void set_thread_priority_lowest(){
+        SetThreadPriority(GetCurrentThread(), THREAD_PRIORITY_LOWEST);
+    }
+#elif defined(ALGLOG_AUTO_THREAD_PRIORITY)
+    #include <pthread.h> // Required for pthread functions
+    #include <sched.h>   // Required for sched functions
+    inline void set_thread_priority_lowest(){
+        sched_param sch;
+        int policy;
+        pthread_getschedparam(pthread_self(), &policy, &sch);
+        sch.sched_priority = sched_get_priority_min(policy);
+        pthread_setschedparam(pthread_self(), policy, &sch);
+    }
+#else
+    inline void set_thread_priority_lowest(){
+        // do nothing
     }
 #endif
 
@@ -249,7 +278,7 @@ private:
     std::vector<std::shared_ptr<sink>> sinks; // loggerは自分が持っているsink全てに入力されたlogを受け渡す。
     std::mutex sinks_mtx;
 public:
-    const bool async_mode;
+    const bool async_mode; // 非同期モードフラグ。非同期モードでは手動でflushする必要がある。同期モードではログ記録と同時に自動的にflush()が呼ばれる。
     logger(bool async_mode = false) : async_mode(async_mode) {}
     ~logger(){
         flush(); // 終了時に必ずフラッシュする
@@ -260,7 +289,7 @@ public:
         sinks.push_back(s);
     }
 
-    // 保管されているログを出力する。
+    // 保管されているログを全て出力する。
     void flush(){
         while(true){
             log_t l;
@@ -300,46 +329,85 @@ public:
 
     template <class ... T>
     void fmt_store(source_location loc, const level lvl, fmt::format_string<T...> fmt, T&&... args){
-        raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+        // TODO : C++17以降であればconstexpr ifを使える
+        switch(lvl){
+            case level::error:
+                #ifdef ALGLOG_ERROR_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::alert:
+                #ifdef ALGLOG_ALERT_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::info:
+                #ifdef ALGLOG_INFO_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::critical:
+                #ifdef ALGLOG_CRITICAL_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::warn:
+                #ifdef ALGLOG_WARN_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::debug:
+                #ifdef ALGLOG_DEBUG_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            case level::trace:
+                #ifdef ALGLOG_TRACE_ON
+                    raw_store(loc, lvl, fmt::format(fmt, std::forward<T>(args)...));
+                #endif
+                break;
+            default:
+                break;
+        }
     }
 
     template <class ... T>
     void fmt_store(const level lvl, fmt::format_string<T...> fmt, T&&... args){
-        raw_store(lvl, fmt::format(fmt, std::forward<T>(args)...));
+        fmt_store(source_location{}, lvl, fmt, std::forward<T>(args)...);
     }
 
     // ----------------------------------------------
 
     template <class ... T>
     void error(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_ERROR_OFF
+        #ifdef ALGLOG_ERROR_ON
             raw_store(level::error, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void alert(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_ALERT_OFF
+        #ifdef ALGLOG_ALERT_ON
             raw_store(level::alert, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void info(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_INFO_OFF
+        #ifdef ALGLOG_INFO_ON
             raw_store(level::info, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void critical(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_CRITICAL_OFF
+        #ifdef ALGLOG_CRITICAL_ON
             raw_store(loc, level::critical, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void critical(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_CRITICAL_OFF
+        #ifdef ALGLOG_CRITICAL_ON
             raw_store(level::critical, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
@@ -347,50 +415,43 @@ public:
 
     template <class ... T>
     void warn(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_WARN_OFF
+        #ifdef ALGLOG_WARN_ON
             raw_store(loc, level::warn, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void warn(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_WARN_OFF
+        #ifdef ALGLOG_WARN_ON
             raw_store(level::warn, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void debug(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_DEBUG_OFF
+        #ifdef ALGLOG_DEBUG_ON
             raw_store(loc, level::debug, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void debug(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_DEBUG_OFF
+        #ifdef ALGLOG_DEBUG_ON
             raw_store(level::debug, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void trace(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_TRACE_OFF
+        #ifdef ALGLOG_TRACE_ON
             raw_store(loc, level::trace, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void trace(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_TRACE_OFF
+        #ifdef ALGLOG_TRACE_ON
             raw_store(level::trace, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 };
-
-
-// #ifndef ALGLOG_INTERNAL_OFF
-//     #define ALGLOG_INTERNAL_STORE(...) lgr->raw_store(level::debug, __VA_ARGS__)
-// #else
-//     #define ALGLOG_INTERNAL_STORE(...) ((void)0)
-// #endif
 
 // 定期的にロガーをフラッシュしたい場合に使えるヘルパークラス
 class flusher{
@@ -413,16 +474,17 @@ public:
 
     // intervalミリ秒ごとにloggerをフラッシュする。
     // intervalを短くしすぎるとメインプログラムの挙動に影響が出る可能性がある。
-    // TODO スレッド優先度を最低にする
     void start(int interval_ms = 500){
         auto interval = std::chrono::milliseconds(interval_ms);
         flusher_thread_run = true;
         flusher_thread = std::make_unique<std::thread>([&,interval]{
-            #ifndef ALGLOG_INTERNAL_OFF
+            #ifdef ALGLOG_INTERNAL_ON
                 if (auto l = lgr.lock()){
                     l->raw_store(level::debug, "[alglog] start periodic flashing");
                 }
             #endif
+            set_thread_priority_lowest();
+
             while(flusher_thread_run){
                 std::this_thread::sleep_for(std::chrono::milliseconds(interval));
                 if (auto l = lgr.lock()){
@@ -553,11 +615,11 @@ class time_counter{
 private:
     std::weak_ptr<logger> lgr;
     std::chrono::time_point<std::chrono::high_resolution_clock> start_time;
-    level lvl;
     std::string title;
+    level lvl;
 
 public:
-    time_counter(std::shared_ptr<logger> logger_weak_ptr, const std::string& title, level lvl = level::debug) : lgr(logger_weak_ptr), lvl(lvl), title(title) {
+    time_counter(std::shared_ptr<logger> logger_weak_ptr, const std::string& title, level lvl = level::debug) : lgr(logger_weak_ptr), title(title), lvl(lvl) {
         if(auto l = lgr.lock()){
             l->fmt_store(lvl, "[{}] start time count", title);
         }

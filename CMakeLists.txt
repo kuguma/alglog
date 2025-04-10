@@ -8,6 +8,10 @@ project(alglog
 )
 
 option(ALGLOG_BUILD_TESTS "Build the test programs" OFF)
+option(ALGLOG_DEFAULT_LOG_SWITCH "Enable default log switch" ON) # デフォルトではリリースでERROR,ALERT,INFOが残る
+option(ALGLOG_GETPID "Enable process ID retrieval" ON)
+option(ALGLOG_GETTID "Enable thread ID retrieval" ON)
+option(ALGLOG_AUTO_THREAD_PRIORITY "Enable automatic thread priority adjustment for flusher thread" ON)
 
 add_library(alglog INTERFACE)
 add_library(alglog::alglog ALIAS alglog)
@@ -32,3 +36,10 @@ target_link_libraries(alglog INTERFACE fmt::fmt)
 if (ALGLOG_BUILD_TESTS)
     add_subdirectory(test)
 endif()
+
+target_compile_definitions(alglog INTERFACE
+    $<$<BOOL:${ALGLOG_DEFAULT_LOG_SWITCH}>:ALGLOG_DEFAULT_LOG_SWITCH>
+    $<$<BOOL:${ALGLOG_GETPID}>:ALGLOG_GETPID>
+    $<$<BOOL:${ALGLOG_GETTID}>:ALGLOG_GETTID>
+    $<$<BOOL:${ALGLOG_AUTO_THREAD_PRIORITY}>:ALGLOG_AUTO_THREAD_PRIORITY>
+)
