@@ -99,6 +99,8 @@ int main(){
 
     // speed test
     {
+        const int num_logs = 1024*8;
+
         auto print_last_line = [](const std::string& filename){
             std::this_thread::sleep_for(std::chrono::milliseconds(500));
             std::ifstream file(filename);
@@ -110,12 +112,11 @@ int main(){
             std::cout << last_line << std::endl;
         };
 
-
         {
             auto l_sync = std::make_shared<alglog::logger>();
             l_sync->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_sync.log") );
             auto t = alglog::time_counter(l_sync, "sync mode");
-            for(int i=0; i<100000; ++i){
+            for(int i=0; i<num_logs; ++i){
                 l_sync->trace("log #{} {} {}", i,i,i);
             }
         }
@@ -124,8 +125,8 @@ int main(){
         {
             auto l_async = std::make_shared<alglog::logger>(true);
             l_async->connect_sink( std::make_shared<alglog::builtin::file_sink>("time_count_async.log") );
-            auto t = alglog::time_counter(l_async, "async mode");
-            for(int i=0; i<100000; ++i){
+            auto t = alglog::time_counter(l_async, "async mode (no timer flush)");
+            for(int i=0; i<num_logs; ++i){
                 l_async->trace("log #{} {} {}", i,i,i);
             }
             l_async->flush();
