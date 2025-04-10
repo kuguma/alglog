@@ -47,6 +47,12 @@
 
 // compile switch -------------------------------------------------
 
+#if defined(NDEBUG) || ( defined(_MSC_VER) && (!defined(_DEBUG)) )
+    #define ALGLOG_RELEASE_BUILD
+#else
+    #define ALGLOG_DEBUG_BUILD
+#endif
+
 // デフォルト動作では、ERROR, ALERT, INFOのみがリリースビルドで残る。
 #ifdef ALGLOG_ALL_OFF
     #define ALGLOG_ERROR_OFF
