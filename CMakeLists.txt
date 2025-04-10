@@ -8,6 +8,8 @@ project(alglog
 )
 
 option(ALGLOG_BUILD_TESTS "Build the test programs" OFF)
+option(ALGLOG_GETPID_ON "Enable process ID retrieval" ON)
+option(ALGLOG_GETTID_ON "Enable thread ID retrieval" ON)
 
 add_library(alglog INTERFACE)
 add_library(alglog::alglog ALIAS alglog)
@@ -32,3 +34,8 @@ target_link_libraries(alglog INTERFACE fmt::fmt)
 if (ALGLOG_BUILD_TESTS)
     add_subdirectory(test)
 endif()
+
+target_compile_definitions(alglog INTERFACE
+    $<$<BOOL:${ALGLOG_GETPID_ON}>:ALGLOG_GETPID_ON>
+    $<$<BOOL:${ALGLOG_GETTID_ON}>:ALGLOG_GETTID_ON>
+)
