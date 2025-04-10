@@ -53,7 +53,8 @@
     #define ALGLOG_DEBUG_BUILD
 #endif
 
-// デフォルト動作では、ERROR, ALERT, INFOのみがリリースビルドで残る。
+
+#ifndef ALGLOG_ALL_OFF
 #ifdef ALGLOG_RELEASE_BUILD
     #define ALGLOG_ERROR_ON
     #define ALGLOG_ALERT_ON
@@ -69,6 +70,7 @@
     #define ALGLOG_DEBUG_ON
     #define ALGLOG_TRACE_ON
     #define ALGLOG_INTERNAL_ON
+#endif
 #endif
 
 
