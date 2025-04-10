@@ -249,7 +249,7 @@ private:
     std::vector<std::shared_ptr<sink>> sinks; // loggerは自分が持っているsink全てに入力されたlogを受け渡す。
     std::mutex sinks_mtx;
 public:
-    const bool async_mode;
+    const bool async_mode; // 非同期モードフラグ。非同期モードでは手動でflushする必要がある。同期モードではログ記録と同時に自動的にflush()が呼ばれる。
     logger(bool async_mode = false) : async_mode(async_mode) {}
     ~logger(){
         flush(); // 終了時に必ずフラッシュする
@@ -260,7 +260,7 @@ public:
         sinks.push_back(s);
     }
 
-    // 保管されているログを出力する。
+    // 保管されているログを全て出力する。
     void flush(){
         while(true){
             log_t l;
