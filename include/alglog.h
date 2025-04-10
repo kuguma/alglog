@@ -54,24 +54,23 @@
 #endif
 
 // デフォルト動作では、ERROR, ALERT, INFOのみがリリースビルドで残る。
-#ifdef ALGLOG_ALL_OFF
-    #define ALGLOG_ERROR_OFF
-    #define ALGLOG_ALERT_OFF
-    #define ALGLOG_INFO_OFF
-    #define ALGLOG_CRITICAL_OFF
-    #define ALGLOG_WARN_OFF
-    #define ALGLOG_DEBUG_OFF
-    #define ALGLOG_TRACE_OFF
-    #define ALGLOG_INTERNAL_OFF
-#elif defined(ALGLOG_ALL_ON)
-    // pass
-#elif defined(NDEBUG) || ( defined(_MSC_VER) && (!defined(_DEBUG)) )
-    #define ALGLOG_CRITICAL_OFF
-    #define ALGLOG_WARN_OFF
-    #define ALGLOG_DEBUG_OFF
-    #define ALGLOG_TRACE_OFF
-    #define ALGLOG_INTERNAL_OFF
+#ifdef ALGLOG_RELEASE_BUILD
+    #define ALGLOG_ERROR_ON
+    #define ALGLOG_ALERT_ON
+    #define ALGLOG_INFO_ON
 #endif
+
+#ifdef ALGLOG_DEBUG_BUILD
+    #define ALGLOG_ERROR_ON
+    #define ALGLOG_ALERT_ON
+    #define ALGLOG_INFO_ON
+    #define ALGLOG_CRITICAL_ON
+    #define ALGLOG_WARN_ON
+    #define ALGLOG_DEBUG_ON
+    #define ALGLOG_TRACE_ON
+    #define ALGLOG_INTERNAL_ON
+#endif
+
 
 // システムコールでプロセスIDを取得する。もしくは機能を利用しない。
 #if defined(ALGLOG_GETPID_ON) && (defined(_WIN32) || defined(_WIN64))
@@ -318,34 +317,34 @@ public:
 
     template <class ... T>
     void error(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_ERROR_OFF
+        #ifdef ALGLOG_ERROR_ON
             raw_store(level::error, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void alert(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_ALERT_OFF
+        #ifdef ALGLOG_ALERT_ON
             raw_store(level::alert, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void info(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_INFO_OFF
+        #ifdef ALGLOG_INFO_ON
             raw_store(level::info, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void critical(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_CRITICAL_OFF
+        #ifdef ALGLOG_CRITICAL_ON
             raw_store(loc, level::critical, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void critical(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_CRITICAL_OFF
+        #ifdef ALGLOG_CRITICAL_ON
             raw_store(level::critical, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
@@ -353,39 +352,39 @@ public:
 
     template <class ... T>
     void warn(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_WARN_OFF
+        #ifdef ALGLOG_WARN_ON
             raw_store(loc, level::warn, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void warn(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_WARN_OFF
+        #ifdef ALGLOG_WARN_ON
             raw_store(level::warn, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void debug(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_DEBUG_OFF
+        #ifdef ALGLOG_DEBUG_ON
             raw_store(loc, level::debug, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void debug(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_DEBUG_OFF
+        #ifdef ALGLOG_DEBUG_ON
             raw_store(level::debug, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
 
     template <class ... T>
     void trace(source_location loc, fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_TRACE_OFF
+        #ifdef ALGLOG_TRACE_ON
             raw_store(loc, level::trace, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
     template <class ... T>
     void trace(fmt::format_string<T...> fmt, T&&... args){
-        #ifndef ALGLOG_TRACE_OFF
+        #ifdef ALGLOG_TRACE_ON
             raw_store(level::trace, fmt::format(fmt, std::forward<T>(args)...));
         #endif
     }
@@ -424,7 +423,7 @@ public:
         auto interval = std::chrono::milliseconds(interval_ms);
         flusher_thread_run = true;
         flusher_thread = std::make_unique<std::thread>([&,interval]{
-            #ifndef ALGLOG_INTERNAL_OFF
+            #ifndef ALGLOG_INTERNAL_ON
                 if (auto l = lgr.lock()){
                     l->raw_store(level::debug, "[alglog] start periodic flashing");
                 }
