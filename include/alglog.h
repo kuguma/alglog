@@ -74,22 +74,22 @@
 #endif
 
 // システムコールでプロセスIDを取得する。もしくは機能を利用しない。
-#ifdef ALGLOG_GETPID_OFF
-    inline uint32_t get_process_id(){
-        return 0;
-    }
-#elif defined(_WIN32) || defined(_WIN64)
+#if defined(ALGLOG_GETPID_ON) && (defined(_WIN32) || defined(_WIN64))
     #include <windows.h>
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(GetCurrentProcessId());
     }
-#else
+#elif defined(ALGLOG_GETPID_ON)
     #include <sys/types.h>
     #include <unistd.h>
     #include <sys/types.h>
     #include <sys/syscall.h>
     inline uint32_t get_process_id(){
         return static_cast<uint32_t>(getpid());
+    }
+#else
+    inline uint32_t get_process_id(){
+        return 0;
     }
 #endif
 
