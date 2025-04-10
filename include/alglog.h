@@ -218,8 +218,7 @@ struct log_t{
 
 
 // ------------------------------------
-
-// Core
+// Log収集用コンテナ
 
 // alglogで用いるログコンテナのインターフェース。
 // 任意の実装を利用可能だが、スレッドセーフ or ロックフリーの実装を推奨する。
@@ -274,6 +273,10 @@ public:
     }
 };
 
+#if defined(ALGLOG_CONTAINER_STD_LIST) && defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
+    #error "ALGLOG_CONTAINER_STD_LIST and ALGLOG_CONTAINER_MPSC_RINGBUFFER are mutually exclusive. Please define only one."
+#endif
+
 #if defined(ALGLOG_CONTAINER_STD_LIST)
     using log_container_t = log_container_std_list;
 #elif defined(ALGLOG_CONTAINER_MPSC_RINGBUFFER)
@@ -287,6 +290,8 @@ public:
     using log_container_t = log_container_std_list;
 #endif
 
+// ------------------------------------
+// Core
 
 struct sink{
     std::function<bool(const log_t&)> valve = nullptr; // データを出力するかを判断する関数
