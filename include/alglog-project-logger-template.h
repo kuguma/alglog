@@ -48,3 +48,6 @@ namespace my_project{
 #define MyLogWarn(...) my_project::Logger::get().logger->warn(ALGLOG_SR, __VA_ARGS__)
 #define MyLogDebug(...) my_project::Logger::get().logger->debug(ALGLOG_SR, __VA_ARGS__)
 #define MyLogTrace(...) my_project::Logger::get().logger->trace(ALGLOG_SR, __VA_ARGS__)
+
+#define MyTimeCount(title) alglog::time_counter _tc(teleaudio::Logger::get().logger, title)
+#define MyTimeCountLevel(title, level) alglog::time_counter _tc(teleaudio::Logger::get().logger, title, level)
