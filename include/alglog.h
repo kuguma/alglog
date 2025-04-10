@@ -455,7 +455,7 @@ public:
         auto interval = std::chrono::milliseconds(interval_ms);
         flusher_thread_run = true;
         flusher_thread = std::make_unique<std::thread>([&,interval]{
-            #ifndef ALGLOG_INTERNAL_ON
+            #ifdef ALGLOG_INTERNAL_ON
                 if (auto l = lgr.lock()){
                     l->raw_store(level::debug, "[alglog] start periodic flashing");
                 }
