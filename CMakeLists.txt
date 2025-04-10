@@ -12,9 +12,8 @@ option(ALGLOG_DEFAULT_LOG_SWITCH "Enable default log switch" ON) # デフォル�
 option(ALGLOG_GETPID "Enable process ID retrieval" ON)
 option(ALGLOG_GETTID "Enable thread ID retrieval" ON)
 option(ALGLOG_AUTO_THREAD_PRIORITY "Enable automatic thread priority adjustment for flusher thread" ON)
-option(ALGLOG_CONTAINER_STD_LIST "Use container of std::list with std::mutex" ON)
-option(ALGLOG_CONTAINER_MPSC_RINGBUFFER "Use container of mpsc ring buffer" OFF)
-option(ALGLOG_MPSC_RINGBUFFER_SIZE "Maximum number of elements in mpsc ring buffer" 32768) # 1024 * 32
+option(ALGLOG_CONTAINER_STD_LIST "Use container of std::list with std::mutex" OFF)
+option(ALGLOG_CONTAINER_MPSC_RINGBUFFER "Use container of mpsc ring buffer" ON)
 
 add_library(alglog INTERFACE)
 add_library(alglog::alglog ALIAS alglog)
@@ -47,5 +46,4 @@ target_compile_definitions(alglog INTERFACE
     $<$<BOOL:${ALGLOG_AUTO_THREAD_PRIORITY}>:ALGLOG_AUTO_THREAD_PRIORITY>
     $<$<BOOL:${ALGLOG_CONTAINER_STD_LIST}>:ALGLOG_CONTAINER_STD_LIST>
     $<$<BOOL:${ALGLOG_CONTAINER_MPSC_RINGBUFFER}>:ALGLOG_CONTAINER_MPSC_RINGBUFFER>
-    ALGLOG_MPSC_RINGBUFFER_SIZE=${ALGLOG_MPSC_RINGBUFFER_SIZE}
 )
