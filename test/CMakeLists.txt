@@ -17,11 +17,7 @@ target_compile_options(AlglogTest PRIVATE
     $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-Wall -Wextra -pedantic -Werror -Wno-unused-parameter>
 )
 
-target_include_directories(AlglogTest PUBLIC
-    "../include"
-    ${fmt_SOURCE_DIR}/include # FetchContentでXXXを取得すると、xxx_SOURCE_DIRでソースディレクトリのパスが取れる
-)
-
 target_link_libraries(AlglogTest PRIVATE
+    alglog::alglog
     Threads::Threads
 )
