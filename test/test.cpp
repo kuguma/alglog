@@ -1,12 +1,72 @@
 #include <alglog-project-logger-template.h>
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <random>
 #include <thread>
+#include <vector>
 
 #include "test_multi_include.h"
 
+namespace {
+
+class overlap_sink : public alglog::sink {
+public:
+    std::atomic<int> active{0};
+    std::atomic<int> max_active{0};
+
+    overlap_sink() {
+        valve = alglog::builtin::valve::always_open;
+    }
+
+    void output(const alglog::log_t&) override {
+        const auto current = active.fetch_add(1) + 1;
+        auto maximum = max_active.load();
+        while (maximum < current && !max_active.compare_exchange_weak(maximum, current)) {}
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        active.fetch_sub(1);
+    }
+};
+
+bool concurrent_sync_logging_is_serialized() {
+    auto sink = std::make_shared<overlap_sink>();
+    auto logger = std::make_shared<alglog::logger>();
+    logger->connect_sink(sink);
+
+    constexpr int num_threads = 8;
+    constexpr int num_iterations = 16;
+    std::atomic<int> ready{0};
+    std::atomic<bool> start{false};
+    std::vector<std::thread> threads;
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&] {
+            ready.fetch_add(1);
+            while (!start.load()) {
+                std::this_thread::yield();
+            }
+            for (int j = 0; j < num_iterations; ++j) {
+                logger->info("concurrent log {}", j);
+            }
+        });
+    }
+    while (ready.load() != num_threads) {
+        std::this_thread::yield();
+    }
+    start.store(true);
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return sink->max_active.load() == 1;
+}
+
+}  // namespace
 
 int main(){
+
+    if (!concurrent_sync_logging_is_serialized()) {
+        std::cerr << "synchronous logging invoked a sink concurrently" << std::endl;
+        return 1;
+    }
 
     MyLogDebug("Lorem ipsum dolor sit amet, consectetur adipiscing elit");
     MyLogDebug("ed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");
