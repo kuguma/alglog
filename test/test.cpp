@@ -1,5 +1,8 @@
+// Synchronous logging must not turn the MPSC queue into a multi-consumer queue.
+#define ALGLOG_CONTAINER_MPSC_RINGBUFFER
 #include <alglog-project-logger-template.h>
 #include <atomic>
+#include <cstddef>
 #include <chrono>
 #include <iostream>
 #include <random>
@@ -10,31 +13,30 @@
 
 namespace {
 
-class overlap_sink : public alglog::sink {
+class counting_sink : public alglog::sink {
 public:
-    std::atomic<int> active{0};
-    std::atomic<int> max_active{0};
+    std::atomic<int> count{0};
+    std::atomic<std::size_t> total_bytes{0};
 
-    overlap_sink() {
+    counting_sink() {
         valve = alglog::builtin::valve::always_open;
     }
 
-    void output(const alglog::log_t&) override {
-        const auto current = active.fetch_add(1) + 1;
-        auto maximum = max_active.load();
-        while (maximum < current && !max_active.compare_exchange_weak(maximum, current)) {}
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        active.fetch_sub(1);
+    void output(const alglog::log_t& log) override {
+        const auto message = log.msg;
+        total_bytes.fetch_add(message.size());
+        count.fetch_add(1);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
 };
 
-bool concurrent_sync_logging_is_serialized() {
-    auto sink = std::make_shared<overlap_sink>();
+bool concurrent_sync_logging_preserves_all_messages() {
+    auto sink = std::make_shared<counting_sink>();
     auto logger = std::make_shared<alglog::logger>();
     logger->connect_sink(sink);
 
     constexpr int num_threads = 8;
-    constexpr int num_iterations = 16;
+    constexpr int num_iterations = 1000;
     std::atomic<int> ready{0};
     std::atomic<bool> start{false};
     std::vector<std::thread> threads;
@@ -45,7 +47,7 @@ bool concurrent_sync_logging_is_serialized() {
                 std::this_thread::yield();
             }
             for (int j = 0; j < num_iterations; ++j) {
-                logger->info("concurrent log {}", j);
+                logger->info("01234567890123456789012345678901234567890123456789 {}", j);
             }
         });
     }
@@ -56,15 +58,17 @@ bool concurrent_sync_logging_is_serialized() {
     for (auto& thread : threads) {
         thread.join();
     }
-    return sink->max_active.load() == 1;
+    constexpr std::size_t prefix_length = 51;
+    const auto expected_bytes = num_threads * (10 * (prefix_length + 1) + 90 * (prefix_length + 2) + 900 * (prefix_length + 3));
+    return sink->count.load() == num_threads * num_iterations && sink->total_bytes.load() == expected_bytes;
 }
 
 }  // namespace
 
 int main(){
 
-    if (!concurrent_sync_logging_is_serialized()) {
-        std::cerr << "synchronous logging invoked a sink concurrently" << std::endl;
+    if (!concurrent_sync_logging_preserves_all_messages()) {
+        std::cerr << "synchronous logging lost or duplicated messages" << std::endl;
         return 1;
     }
 
