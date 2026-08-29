@@ -1,12 +1,79 @@
 #include <alglog-project-logger-template.h>
+#include <atomic>
+#include <chrono>
 #include <iostream>
 #include <random>
+#include <stdexcept>
 #include <thread>
+#include <vector>
 
 #include "test_multi_include.h"
 
+namespace {
+
+class non_reentrant_sink : public alglog::sink {
+private:
+    std::mutex mutex;
+
+public:
+    std::atomic<int> concurrent_calls{0};
+
+    non_reentrant_sink() {
+        valve = alglog::builtin::valve::always_open;
+    }
+
+    void output(const alglog::log_t&) override {
+        std::unique_lock<std::mutex> lock(mutex, std::try_to_lock);
+        if (!lock.owns_lock()) {
+            concurrent_calls.fetch_add(1);
+            throw std::runtime_error("sink accessed concurrently");
+        }
+        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+    }
+};
+
+bool concurrent_sync_logging_is_serialized() {
+    auto sink = std::make_shared<non_reentrant_sink>();
+    auto logger = std::make_shared<alglog::logger>();
+    logger->connect_sink(sink);
+
+    constexpr int num_threads = 8;
+    constexpr int num_iterations = 16;
+    std::atomic<int> ready{0};
+    std::atomic<bool> start{false};
+    std::vector<std::thread> threads;
+    for (int i = 0; i < num_threads; ++i) {
+        threads.emplace_back([&] {
+            ready.fetch_add(1);
+            while (!start.load()) {
+                std::this_thread::yield();
+            }
+            for (int j = 0; j < num_iterations; ++j) {
+                try {
+                    logger->info("concurrent log {}", j);
+                } catch (const std::exception&) {
+                }
+            }
+        });
+    }
+    while (ready.load() != num_threads) {
+        std::this_thread::yield();
+    }
+    start.store(true);
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return sink->concurrent_calls.load() == 0;
+}
+
+}  // namespace
 
 int main(){
+
+    if (!concurrent_sync_logging_is_serialized()) {
+        std::cerr << "synchronous logging accessed a non-reentrant sink concurrently" << std::endl;
+        return 1;
+    }
 
     MyLogDebug("Lorem ipsum dolor sit amet, consectetur adipiscing elit");
     MyLogDebug("ed do eiusmod tempor incididunt ut labore et dolore magna aliqua.");

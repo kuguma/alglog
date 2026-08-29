@@ -303,6 +303,7 @@ class logger{
 private:
     log_container_t logs;
     std::vector<std::shared_ptr<sink>> sinks; // loggerは自分が持っているsink全てに入力されたlogを受け渡す。
+    std::mutex flush_mtx;
     std::mutex sinks_mtx;
 public:
     const bool async_mode; // 非同期モードフラグ。非同期モードでは手動でflushする必要がある。同期モードではログ記録と同時に自動的にflush()が呼ばれる。
@@ -318,6 +319,7 @@ public:
 
     // 保管されているログを全て出力する。
     void flush(){
+        std::lock_guard<std::mutex> lock(flush_mtx);
         while(true){
             log_t l;
             auto ret = logs.pop(l);
